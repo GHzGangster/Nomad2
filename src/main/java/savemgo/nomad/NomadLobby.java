@@ -73,7 +73,7 @@ public abstract class NomadLobby extends ChannelInboundHandlerAdapter {
 		} catch (Exception e) {
 			logger.error("Exception while handling packet.", e);
 		} finally {
-			Buffers.release(in);
+			Buffers.release(in.getPayload());
 		}
 
 		if (wrote) {

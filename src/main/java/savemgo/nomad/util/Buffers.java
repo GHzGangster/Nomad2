@@ -19,12 +19,6 @@ public class Buffers {
 		}
 	}
 
-	public static void release(Packet packet) {
-		if (packet != null) {
-			release(packet.getPayload());
-		}
-	}
-
 	public static void release(PayloadGroup payloads) {
 		if (payloads != null) {
 			for (var buffer : payloads.getBuffers()) {
