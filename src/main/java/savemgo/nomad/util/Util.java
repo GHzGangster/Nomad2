@@ -1,4 +1,4 @@
-package savemgo.nomad;
+package savemgo.nomad.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -15,7 +15,7 @@ public class Util {
 	public static final ObjectMapper MAPPER = new ObjectMapper();
 
 	public static void release(ByteBuf buffer) {
-		if (buffer != null) {
+		if (buffer != null && buffer.refCnt() > 0) {
 			buffer.release();
 		}
 	}

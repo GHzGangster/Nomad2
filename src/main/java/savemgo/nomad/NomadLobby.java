@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.ReadTimeoutException;
 import savemgo.nomad.packet.Packet;
+import savemgo.nomad.util.Util;
 
 public abstract class NomadLobby extends ChannelInboundHandlerAdapter {
 

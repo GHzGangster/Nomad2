@@ -22,18 +22,29 @@ import savemgo.nomad.database.NomadSqlLogger;
 import savemgo.nomad.database.bean.Lobby;
 import savemgo.nomad.helper.Hub;
 import savemgo.nomad.lobby.GateLobby;
+import savemgo.nomad.util.Util;
 
 public class Nomad {
 
+	private static Nomad INSTANCE = null;
 	private static final Logger logger = LogManager.getLogger();
 
 	private boolean running = false;
-
 	private Config config = new Config();
-
 	private List<NomadLobby> lobbies = new ArrayList<>();
 
-	public Nomad() {
+	private Nomad() {
+
+	}
+
+	public static Nomad get() {
+		if (Nomad.INSTANCE == null) {
+			Nomad.INSTANCE = new Nomad();
+		}
+		return Nomad.INSTANCE;
+	}
+
+	void init() {
 		try {
 			// Load config
 			Path path = Paths.get("config.json");
@@ -48,9 +59,7 @@ public class Nomad {
 			setupLobbies();
 
 			// Start the server
-//			run();
-			
-//			test();
+			run();
 		} catch (Exception e) {
 			logger.error("An error has occurred.", e);
 		}
@@ -59,7 +68,7 @@ public class Nomad {
 	private void test() {
 		Hub.getLobbyList(null);
 	}
-	
+
 	private void setupLobbies() throws IllegalAccessException, InvocationTargetException {
 		// Get lobbies from database
 		List<Lobby> dbLobbies = null;
@@ -174,8 +183,12 @@ public class Nomad {
 		}).start();
 	}
 
-	public static void main(String[] args) {
-		new Nomad();
+	public Config getConfig() {
+		return config;
+	}
+
+	public List<NomadLobby> getLobbies() {
+		return lobbies;
 	}
 
 }
