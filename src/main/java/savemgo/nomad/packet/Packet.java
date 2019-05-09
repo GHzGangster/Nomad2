@@ -5,6 +5,8 @@ import io.netty.buffer.ByteBuf;
 public class Packet {
 
 	private short command;
+
+	private int result;
 	private ByteBuf payload;
 
 	public Packet() {
@@ -13,6 +15,11 @@ public class Packet {
 
 	public Packet(int command) {
 		this.command = (short) command;
+	}
+
+	public Packet(int command, int result) {
+		this.command = (short) command;
+		this.result = result;
 	}
 
 	public Packet(int command, ByteBuf payload) {
@@ -36,4 +43,14 @@ public class Packet {
 		this.payload = payload;
 	}
 
+	public int getResult() {
+		return result;
+	}
+
+	public void setResult(int result) {
+		this.result = result;
+	}
+
+	
+	
 }

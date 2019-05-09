@@ -7,7 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.ReadTimeoutException;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.util.Util;
+import savemgo.nomad.util.Buffers;
 
 public abstract class NomadLobby extends ChannelInboundHandlerAdapter {
 
@@ -73,7 +73,7 @@ public abstract class NomadLobby extends ChannelInboundHandlerAdapter {
 		} catch (Exception e) {
 			logger.error("Exception while handling packet.", e);
 		} finally {
-			Util.release(in);
+			Buffers.release(in);
 		}
 
 		if (wrote) {

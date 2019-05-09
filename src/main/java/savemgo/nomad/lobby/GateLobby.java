@@ -4,11 +4,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.NomadLobby;
 import savemgo.nomad.helper.Hub;
 import savemgo.nomad.packet.Packet;
 
+@Sharable
 public class GateLobby extends NomadLobby {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -21,7 +23,7 @@ public class GateLobby extends NomadLobby {
 
 		/** Main Lobby */
 		case 0x2005:
-			Hub.getLobbyList(ctx);
+//			Hub.getLobbyList(ctx);
 			break;
 
 		case 0x2008:
@@ -29,7 +31,7 @@ public class GateLobby extends NomadLobby {
 			break;
 
 		default:
-			logger.printf(Level.DEBUG, "Couldn't handle command %04x", in.getCommand());
+			logger.printf(Level.DEBUG, "Couldn't handle command : %04x", in.getCommand());
 			return false;
 		}
 

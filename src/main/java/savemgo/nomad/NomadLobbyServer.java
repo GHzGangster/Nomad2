@@ -15,10 +15,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
 public class NomadLobbyServer {
 
 	private static final Logger logger = LogManager.getLogger();
-	
-	private static final int MAX_CLIENTS = 2010;
-	
-	private static final int BUF_PER_CLIENT = 0x4000;
 
 	private ServerBootstrap sb;
 	private ChannelFuture future;
@@ -29,11 +25,11 @@ public class NomadLobbyServer {
 		sb.group(boss, workers);
 		sb.channel(NioServerSocketChannel.class);
 
-		sb.option(ChannelOption.SO_BACKLOG, MAX_CLIENTS);
+		sb.option(ChannelOption.SO_BACKLOG, Constants.SERVER_CLIENT_MAX);
 		sb.option(ChannelOption.SO_REUSEADDR, true);
 
 		sb.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
-		sb.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(BUF_PER_CLIENT));
+		sb.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(Constants.SERVER_CLIENT_RCVBUF));
 		sb.childOption(ChannelOption.SO_SNDBUF, 65535);
 		sb.childOption(ChannelOption.SO_RCVBUF, 65535);
 
