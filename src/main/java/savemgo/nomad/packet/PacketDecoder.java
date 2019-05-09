@@ -51,10 +51,10 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 
 			buffer.writeBytes(message);
 			
-//			logger.debug("Buffer start {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
+			logger.debug("Buffer start {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 
 			while (buffer.isReadable()) {
-//				logger.debug("Buffer loop {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
+				logger.debug("Buffer loop {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 				
 				// Check for the header
 				int readable = buffer.readableBytes();
@@ -88,6 +88,8 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 
 				// Xor the packet, and advance the reader index
 				Packets.xorScrambler(buffer, readerIndex, totalLength);
+				logger.debug("xor {} {}", readerIndex, totalLength);
+				logger.debug("Buffer decr {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 				buffer.readerIndex(readerIndex + totalLength);
 				
 				// TODO: Get seq and digest, and check them
@@ -119,7 +121,7 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				ctx.fireChannelRead(packet);
 			}
 			
-//			logger.debug("Buffer end {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
+			logger.debug("Buffer end {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 			
 			// Reset the buffer
 			var bufferEx = ByteBufEx.get(buffer);
@@ -129,7 +131,7 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				bufferEx.recycle();
 			}
 			
-//			logger.debug("Buffer end reset {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
+			logger.debug("Buffer end reset {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 		} catch (Exception e) {
 			logger.error("Failed to decode packet.", e);
 		} finally {

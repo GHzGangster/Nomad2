@@ -20,7 +20,7 @@ public class Constants {
 	public static final int PACKET_PAYLOAD_MAX = 0x3ff;
 	
 	public static final int PACKET_SCRAMBLER = 0;//0x5a7085af;
-	public static final int PACKET_SCRAMBLER_LONG = PACKET_SCRAMBLER | (PACKET_SCRAMBLER << 32);
+	public static final long PACKET_SCRAMBLER_LONG = ((PACKET_SCRAMBLER & 0xffffffffL) << 32) | PACKET_SCRAMBLER;
 	public static final int PACKET_SCRAMBLER_HIGH = (PACKET_SCRAMBLER >> 16) & 0xffff;
 	public static final int PACKET_SCRAMBLER_LOW = PACKET_SCRAMBLER & 0xffff;
 	public static final byte[] PACKET_SCRAMBLER_BYTES = Util.intToBytes(PACKET_SCRAMBLER);
