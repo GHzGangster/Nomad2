@@ -60,12 +60,8 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 			}
 
 			buffer.writeBytes(message);
-			
-			logger.debug("Buffer start {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 
-			while (buffer.isReadable()) {
-				logger.debug("Buffer loop {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
-				
+			while (buffer.isReadable()) {				
 				// Check for the header
 				int readable = buffer.readableBytes();
 				if (readable < Constants.PACKET_HEADER) {
@@ -98,8 +94,6 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 
 				// Xor the packet, and advance the reader index
 				Packets.xorScrambler(buffer, readerIndex, totalLength);
-				logger.debug("xor {} {}", readerIndex, totalLength);
-				logger.debug("Buffer decr {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 				buffer.readerIndex(readerIndex + totalLength);
 				
 				// Get sequence
@@ -163,8 +157,6 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				ctx.fireChannelRead(packet);
 			}
 			
-			logger.debug("Buffer end {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
-			
 			// Reset the buffer
 			var bufferEx = ByteBufEx.get(buffer);
 			try {
@@ -172,8 +164,6 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 			} finally {
 				bufferEx.recycle();
 			}
-			
-			logger.debug("Buffer end reset {} {}\n{}", buffer.readerIndex(), buffer.writerIndex(), ByteBufUtil.prettyHexDump(buffer));
 		} catch (Exception e) {
 			logger.error("Failed to decode packet.", e);
 		} finally {
