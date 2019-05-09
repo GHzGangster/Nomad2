@@ -20,6 +20,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.NomadSqlLogger;
 import savemgo.nomad.database.bean.Lobby;
+import savemgo.nomad.helper.Hub;
 import savemgo.nomad.lobby.GateLobby;
 
 public class Nomad {
@@ -47,12 +48,18 @@ public class Nomad {
 			setupLobbies();
 
 			// Start the server
-			run();
+//			run();
+			
+//			test();
 		} catch (Exception e) {
 			logger.error("An error has occurred.", e);
 		}
 	}
 
+	private void test() {
+		Hub.getLobbyList(null);
+	}
+	
 	private void setupLobbies() throws IllegalAccessException, InvocationTargetException {
 		// Get lobbies from database
 		List<Lobby> dbLobbies = null;
@@ -62,7 +69,7 @@ public class Nomad {
 		}
 
 		// Create lobby instances
-		for (Lobby dbLobby : dbLobbies) {			
+		for (Lobby dbLobby : dbLobbies) {
 			NomadLobby lobby = null;
 			if (dbLobby.getType() == 0) {
 				lobby = new GateLobby();
@@ -156,8 +163,12 @@ public class Nomad {
 				} catch (IOException e) {
 
 				}
-				if (line != null && line.equals("stop")) {
-					running = false;
+				if (line != null) {
+					if (line.equals("stop")) {
+						running = false;
+					} else if (line.equals("test")) {
+						test();
+					}
 				}
 			}
 		}).start();
