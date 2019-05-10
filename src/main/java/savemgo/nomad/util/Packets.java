@@ -10,9 +10,9 @@ public class Packets {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	public static byte[] CRYPTO_KEY = null;
+	public static byte[] KEY_KIT = null;
 
-	public static void xorScrambler(ByteBuf buffer, int index, int length) {
+	public static void scramble(ByteBuf buffer, int index, int length) {
 		int longCount = length >>> 3;
 		int byteCount = length & 7;
 
@@ -30,7 +30,7 @@ public class Packets {
 	}
 
 	static {
-		CRYPTO_KEY = Ptsys.decryptKey(Ptsys.KEY_6);
+		KEY_KIT = Ptsys.decryptKey(Ptsys.KEY_6);
 	}
 
 }

@@ -11,7 +11,7 @@ import savemgo.nomad.helper.Hub;
 import savemgo.nomad.packet.Packet;
 
 @Sharable
-public class GateLobby extends NomadLobby {
+public class AccountLobby extends NomadLobby {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -21,13 +21,8 @@ public class GateLobby extends NomadLobby {
 
 		switch (command) {
 
-		/** Main Lobby */
-		case 0x2005:
-			Hub.getLobbyList(ctx);
-			break;
-
-		case 0x2008:
-//			Hub.getNews(ctx);
+		case 0x3003:
+//			ctx.close();
 			break;
 
 		default:

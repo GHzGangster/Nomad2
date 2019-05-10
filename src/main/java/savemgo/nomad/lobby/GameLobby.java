@@ -11,7 +11,7 @@ import savemgo.nomad.helper.Hub;
 import savemgo.nomad.packet.Packet;
 
 @Sharable
-public class GateLobby extends NomadLobby {
+public class GameLobby extends NomadLobby {
 
 	private static final Logger logger = LogManager.getLogger();
 

@@ -50,7 +50,5 @@ public class Packet {
 	public void setResult(int result) {
 		this.result = result;
 	}
-
-	
 	
 }

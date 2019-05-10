@@ -1,6 +1,5 @@
 package savemgo.nomad.packet;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import javax.crypto.Mac;
@@ -54,31 +53,28 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
-		ByteBuf message = (ByteBuf) msg;
+		var message = (ByteBuf) msg;
 		try {
 			var attrBuffer = ctx.channel().attr(BUFFER_IN);
 			var buffer = attrBuffer.get();
-			if (buffer == null) {
-				return;
-			}
 
 			buffer.writeBytes(message);
 
 			while (buffer.isReadable()) {
 				// Check for the header
 				int readable = buffer.readableBytes();
-				if (readable < Constants.PACKET_HEADER) {
+				if (readable < 0x18) {
 					logger.debug("Packet is too short, waiting for header...");
 					break;
 				}
 
-				// Get the payload length
+				// Get the original payload length
 				int readerIndex = buffer.readerIndex();
 
 				int command = buffer.getUnsignedShort(readerIndex) ^ Constants.PACKET_SCRAMBLER_HIGH;
 				int length = buffer.getUnsignedShort(readerIndex + 0x2) ^ Constants.PACKET_SCRAMBLER_LOW;
 
-				// Check if packet is crypted, if so figure out the padding
+				// Check if payload is encrypted, if so figure out the padding
 				boolean encrypted = Ints.contains(Constants.PACKET_CRYPTED_IN, command);
 				int padding = 0;
 				if (encrypted && (length % 8) > 0) {
@@ -93,14 +89,14 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				}
 
 				// Check for the payload
-				int totalLength = Constants.PACKET_HEADER + payloadLength;
+				int totalLength = 0x18 + payloadLength;
 				if (readable < totalLength) {
 					logger.debug("Packet is too short, waiting for payload...");
 					break;
 				}
 
 				// Xor the packet, and advance the reader index
-				Packets.xorScrambler(buffer, readerIndex, totalLength);
+				Packets.scramble(buffer, readerIndex, totalLength);
 				buffer.readerIndex(readerIndex + totalLength);
 
 				// Get sequence
@@ -111,7 +107,7 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				int ourSequence = attrSequence.get();
 				if (sequence != ourSequence) {
 					logger.warn("Sequence is incorrect!");
-					continue;
+//					continue;
 				}
 
 				// Increment sequence
@@ -122,13 +118,13 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				buffer.getBytes(readerIndex + 0x8, digest);
 
 				// Calculate our digest and check
-				Mac mac = Mac.getInstance("HmacMD5");
+				var mac = Mac.getInstance("HmacMD5");
 				mac.init(Constants.PACKET_HMAC_SPEC);
 
-				ByteBuffer buf = buffer.nioBuffer(readerIndex, 8);
+				var buf = buffer.nioBuffer(readerIndex, 8);
 				mac.update(buf);
 				if (payloadLength > 0) {
-					buf = buffer.nioBuffer(readerIndex + 0x18, totalLength);
+					buf = buffer.nioBuffer(readerIndex + 0x18, payloadLength);
 					mac.update(buf);
 				}
 
@@ -142,11 +138,11 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 				ByteBuf payload = null;
 				if (payloadLength > 0) {
 					try {
-						payload = buffer.copy(readerIndex + Constants.PACKET_HEADER, payloadLength);
-						
+						payload = buffer.copy(readerIndex + 0x18, payloadLength);
+
 						// Decrypt payload if needed
 						if (encrypted) {
-							Ptsys.decryptBlowfish(Packets.CRYPTO_KEY, payload, 0, payload, 0, length);
+							Ptsys.decryptBlowfishSimple(Constants.PACKET_MIO, payload, 0, payload, 0, payloadLength);
 							payload.writerIndex(length);
 						}
 					} catch (Exception e) {

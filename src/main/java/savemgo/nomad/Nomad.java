@@ -24,8 +24,11 @@ import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.NomadSqlLogger;
 import savemgo.nomad.database.record.Lobby;
+import savemgo.nomad.lobby.AccountLobby;
+import savemgo.nomad.lobby.GameLobby;
 import savemgo.nomad.lobby.GateLobby;
 import savemgo.nomad.util.Buffers;
+import savemgo.nomad.util.Constants;
 import savemgo.nomad.util.Packets;
 import savemgo.nomad.util.Util;
 
@@ -51,11 +54,6 @@ public class Nomad {
 
 	void init() {
 		try {
-			if (Math.sqrt(1) == 1) {
-				test();
-				return;
-			}
-
 			// Load config
 			Path path = Paths.get("config.json");
 			String jsonString = Files.readString(path);
@@ -80,10 +78,10 @@ public class Nomad {
 	private void test() {
 		// What to do for Users#checkSession()
 		// We want to "encrypt" the session id to get what we sent in gidauth
-		
-		byte[] in = { (byte) 0xE7, (byte) 0xBA, (byte) 0xB4, (byte) 0x26,
-				(byte) 0xFE, (byte) 0x3F, (byte) 0x40, (byte) 0x73, (byte) 0xDB, (byte) 0x94, (byte) 0x36, (byte) 0xDF,
-				(byte) 0x6D, (byte) 0xDB, (byte) 0xD3, (byte) 0x9C };
+
+		byte[] in = { (byte) 0xE7, (byte) 0xBA, (byte) 0xB4, (byte) 0x26, (byte) 0xFE, (byte) 0x3F, (byte) 0x40,
+				(byte) 0x73, (byte) 0xDB, (byte) 0x94, (byte) 0x36, (byte) 0xDF, (byte) 0x6D, (byte) 0xDB, (byte) 0xD3,
+				(byte) 0x9C };
 		int length = in.length;
 
 		ByteBuf bi = null, bo = null;
@@ -91,7 +89,29 @@ public class Nomad {
 			bi = Unpooled.wrappedBuffer(in);
 			bo = Buffers.ALLOCATOR.buffer(length);
 
-			Ptsys.encryptBlowfish(Packets.CRYPTO_KEY, bi, 0, bo, 0, length);
+			Ptsys.encryptBlowfish(Packets.KEY_KIT, bi, 0, bo, 0, length);
+			bo.setIndex(0, length);
+			logger.debug(ByteBufUtil.hexDump(bo));
+		} finally {
+			Buffers.release(bi);
+			Buffers.release(bo);
+		}
+	}
+	
+	private void test2() {
+		byte[] in = { (byte) 0x2A, (byte) 0xFB, (byte) 0x10, (byte) 0xC6, (byte) 0x4A, (byte) 0xD0, (byte) 0x98,
+				(byte) 0x35, (byte) 0xB5, (byte) 0x9E, (byte) 0xBC, (byte) 0x47, (byte) 0x9F, (byte) 0x87, (byte) 0xF6,
+				(byte) 0xDC, (byte) 0x8C, (byte) 0x1B, (byte) 0x44, (byte) 0x66, (byte) 0xFF, (byte) 0x2E, (byte) 0x62,
+				(byte) 0xA9 };
+		
+		int length = in.length;
+
+		ByteBuf bi = null, bo = null;
+		try {
+			bi = Unpooled.wrappedBuffer(in);
+			bo = Buffers.ALLOCATOR.buffer(length);
+
+			Ptsys.decryptBlowfishSimple(Constants.PACKET_MIO, bi, 0, bo, 0, length);
 			bo.setIndex(0, length);
 			logger.debug(ByteBufUtil.hexDump(bo));
 		} finally {
@@ -113,6 +133,10 @@ public class Nomad {
 			NomadLobby lobby = null;
 			if (dbLobby.getType() == 0) {
 				lobby = new GateLobby();
+			} else if (dbLobby.getType() == 1) {
+				lobby = new AccountLobby();
+			} else if (dbLobby.getType() == 2) {
+				lobby = new GameLobby();
 			}
 
 			if (lobby != null) {

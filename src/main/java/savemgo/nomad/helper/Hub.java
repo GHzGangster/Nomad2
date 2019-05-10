@@ -15,7 +15,7 @@ public class Hub {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private static final Packet LOBBYLIST_START = new Packet(0x4901, 0);
+	private static final Packet LOBBYLIST_START = new Packet(0x4901, 0xdeadbeef);
 	private static final Packet LOBBYLIST_END = new Packet(0x4903, 0);
 
 	public static void getLobbyList(ChannelHandlerContext ctx) {
@@ -45,13 +45,23 @@ public class Hub {
 				}
 			});
 
-//			ctx.write(LOBBYLIST_START);
-//			ctx.write(new Packet());
-//			ctx.write(LOBBYLIST_END);
+			ctx.write(new Packet(0x2002));
+			for (var payload : payloads.getBuffers()) {
+				ctx.write(new Packet(0x2003, payload));
+			}
+			ctx.write(new Packet(0x2004));
 		} catch (Exception e) {
 			logger.error("getLobbyList: Exception occurred.", e);
 			Buffers.release(payloads);
 		}
+	}
+
+	public static void test(ChannelHandlerContext ctx) {
+//		byte[] array = { (byte) 0xde, (byte) 0xad, (byte) 0xbe, (byte) 0xef };
+//		ByteBuf buffer = Unpooled.wrappedBuffer(array);
+//		ctx.write(new Packet(0x2005, buffer));
+		
+		ctx.write(new Packet(0x2002));
 	}
 
 	public static void getNews(ChannelHandlerContext ctx) {
