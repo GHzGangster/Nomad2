@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.NomadLobby;
-import savemgo.nomad.helper.Hub;
+import savemgo.nomad.helper.Users;
 import savemgo.nomad.packet.Packet;
 
 @Sharable
@@ -22,7 +22,7 @@ public class AccountLobby extends NomadLobby {
 		switch (command) {
 
 		case 0x3003:
-//			ctx.close();
+			Users.setSession(ctx, in);
 			break;
 
 		default:

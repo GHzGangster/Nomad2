@@ -15,6 +15,15 @@ public class Hub {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	/**
+	 * TODO: Add support for constant packets (don't release after writing) ... we
+	 * will need to release eventually though... might have to skip out on this if
+	 * it has a bytebuf ... may be okay if we use a byte array?
+	 * 
+	 * TODO: Add support for having a result as the payload (actually write the
+	 * result as the payload!)
+	 */
+
 	private static final Packet LOBBYLIST_START = new Packet(0x4901, 0xdeadbeef);
 	private static final Packet LOBBYLIST_END = new Packet(0x4903, 0);
 
@@ -60,7 +69,7 @@ public class Hub {
 //		byte[] array = { (byte) 0xde, (byte) 0xad, (byte) 0xbe, (byte) 0xef };
 //		ByteBuf buffer = Unpooled.wrappedBuffer(array);
 //		ctx.write(new Packet(0x2005, buffer));
-		
+
 		ctx.write(new Packet(0x2002));
 	}
 

@@ -46,7 +46,7 @@ public class ByteBufEx {
 		int indexStart = buffer.readerIndex();
 		int readLength = Math.min(buffer.readableBytes(), maxLength);
 
-		int stringLength = 0;
+		int stringLength = readLength;
 		for (int i = 0; i < readLength; i++) {
 			int val = (int) buffer.readByte();
 			if (val == 0x00) {
