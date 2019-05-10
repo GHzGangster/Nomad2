@@ -70,7 +70,6 @@ public class Nomad {
 	}
 
 	private void test() {
-		// test
 		ResultError error = ResultError.GENERAL;
 		try {
 			if (Math.sqrt(1) == 1) {
