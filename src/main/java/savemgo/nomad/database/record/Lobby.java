@@ -1,4 +1,4 @@
-package savemgo.nomad.database.bean;
+package savemgo.nomad.database.record;
 
 public class Lobby {
 

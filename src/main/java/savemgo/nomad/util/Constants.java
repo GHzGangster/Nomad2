@@ -1,8 +1,6 @@
-package savemgo.nomad;
+package savemgo.nomad.util;
 
 import javax.crypto.spec.SecretKeySpec;
-
-import savemgo.nomad.util.Util;
 
 public class Constants {
 
@@ -31,5 +29,8 @@ public class Constants {
 			(byte) 0x2D, (byte) 0x38, (byte) 0x79, (byte) 0x78 };
 
 	public static final SecretKeySpec PACKET_HMAC_SPEC = new SecretKeySpec(PACKET_HMAC, "HmacMD5");
+
+	public static final int[] PACKET_CRYPTED_IN = { 0x3003, 0x4310, 0x4320, 0x43c0, 0x4700, 0x4990 };
+	public static final int[] PACKET_CRYPTED_OUT = { 0x4305 };
 
 }

@@ -150,7 +150,12 @@
 			<artifactId>commons-beanutils</artifactId>
 			<version>1.9.3</version>
 		</dependency>
-
+		
+		<dependency>
+			<groupId>io.github.dheid</groupId>
+			<artifactId>blowfishj</artifactId>
+			<version>2.16</version>
+		</dependency>
 	</dependencies>
 
 </project>

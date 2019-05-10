@@ -4,14 +4,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import io.netty.buffer.ByteBuf;
-import savemgo.nomad.Constants;
+import savemgo.nomad.crypto.ptsys.Ptsys;
 
 public class Packets {
 
 	private static final Logger logger = LogManager.getLogger();
-	
-	// stuff for checking if crypto packet
-	
+
+	public static byte[] CRYPTO_KEY = null;
+
 	public static void xorScrambler(ByteBuf buffer, int index, int length) {
 		int longCount = length >>> 3;
 		int byteCount = length & 7;
@@ -28,5 +28,9 @@ public class Packets {
 			index++;
 		}
 	}
-	
+
+	static {
+		CRYPTO_KEY = Ptsys.decryptKey(Ptsys.KEY_6);
+	}
+
 }
