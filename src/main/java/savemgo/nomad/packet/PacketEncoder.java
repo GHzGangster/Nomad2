@@ -42,13 +42,15 @@ public class PacketEncoder extends ChannelOutboundHandlerAdapter {
 			logger.printf(Level.DEBUG, "Sent %04x", packet.getCommand());
 			if (packet.getPayload() != null) {
 				logger.debug(ByteBufUtil.hexDump(packet.getPayload()));
+			} else {
+				logger.printf(Level.DEBUG, "%08x", packet.getResult());
 			}
 
 			// Get command
 			int command = packet.getCommand();
 
 			// Get original payload length
-			int length = 0;
+			int length = 4;
 			if (packet.getPayload() != null) {
 				length = packet.getPayload().readableBytes();
 			}
@@ -79,9 +81,13 @@ public class PacketEncoder extends ChannelOutboundHandlerAdapter {
 
 			// Write payload
 			if (payloadLength > 0) {
-				buffer.writeBytes(packet.getPayload());
-				if (padding > 0) {
-					buffer.writeZero(padding);
+				if (packet.getPayload() != null) {
+					buffer.writeBytes(packet.getPayload());
+					if (padding > 0) {
+						buffer.writeZero(padding);
+					}
+				} else {
+					buffer.writeInt(packet.getResult());
 				}
 			}
 

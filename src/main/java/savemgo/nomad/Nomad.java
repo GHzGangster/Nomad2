@@ -14,22 +14,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdbi.v3.core.Handle;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
-import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.NomadSqlLogger;
 import savemgo.nomad.database.record.Lobby;
 import savemgo.nomad.lobby.AccountLobby;
 import savemgo.nomad.lobby.GameLobby;
 import savemgo.nomad.lobby.GateLobby;
-import savemgo.nomad.util.Buffers;
-import savemgo.nomad.util.Constants;
-import savemgo.nomad.util.Packets;
+import savemgo.nomad.packet.ResultError;
 import savemgo.nomad.util.Util;
 
 public class Nomad {
@@ -76,47 +70,15 @@ public class Nomad {
 	}
 
 	private void test() {
-		// What to do for Users#checkSession()
-		// We want to "encrypt" the session id to get what we sent in gidauth
-
-		byte[] in = { (byte) 0xE7, (byte) 0xBA, (byte) 0xB4, (byte) 0x26, (byte) 0xFE, (byte) 0x3F, (byte) 0x40,
-				(byte) 0x73, (byte) 0xDB, (byte) 0x94, (byte) 0x36, (byte) 0xDF, (byte) 0x6D, (byte) 0xDB, (byte) 0xD3,
-				(byte) 0x9C };
-		int length = in.length;
-
-		ByteBuf bi = null, bo = null;
+		ResultError error = ResultError.GENERAL;
 		try {
-			bi = Unpooled.wrappedBuffer(in);
-			bo = Buffers.ALLOCATOR.buffer(length);
-
-			Ptsys.encryptBlowfish(Packets.KEY_KIT, bi, 0, bo, 0, length);
-			bo.setIndex(0, length);
-			logger.debug(ByteBufUtil.hexDump(bo));
-		} finally {
-			Buffers.release(bi);
-			Buffers.release(bo);
-		}
-	}
-	
-	private void test2() {
-		byte[] in = { (byte) 0x2A, (byte) 0xFB, (byte) 0x10, (byte) 0xC6, (byte) 0x4A, (byte) 0xD0, (byte) 0x98,
-				(byte) 0x35, (byte) 0xB5, (byte) 0x9E, (byte) 0xBC, (byte) 0x47, (byte) 0x9F, (byte) 0x87, (byte) 0xF6,
-				(byte) 0xDC, (byte) 0x8C, (byte) 0x1B, (byte) 0x44, (byte) 0x66, (byte) 0xFF, (byte) 0x2E, (byte) 0x62,
-				(byte) 0xA9 };
-		
-		int length = in.length;
-
-		ByteBuf bi = null, bo = null;
-		try {
-			bi = Unpooled.wrappedBuffer(in);
-			bo = Buffers.ALLOCATOR.buffer(length);
-
-			Ptsys.decryptBlowfishSimple(Constants.PACKET_MIO, bi, 0, bo, 0, length);
-			bo.setIndex(0, length);
-			logger.debug(ByteBufUtil.hexDump(bo));
-		} finally {
-			Buffers.release(bi);
-			Buffers.release(bo);
+			if (Math.sqrt(1) == 1) {
+				error = ResultError.INVALID_SESSION;
+				throw new Exception("invalid session");
+			}
+		} catch (Exception e) {
+			logger.error("test: Exception occurred.", e);
+			logger.debug("Error: {}", error);
 		}
 	}
 

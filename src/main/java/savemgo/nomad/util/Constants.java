@@ -41,4 +41,6 @@ public class Constants {
 			(byte) 0x01, (byte) 0x46, (byte) 0xD2, (byte) 0x15, (byte) 0x44, (byte) 0xEC, (byte) 0x36, (byte) 0x5B,
 			(byte) 0xF7, (byte) 0x28, (byte) 0x9A };
 
+	public static final int PACKET_ERROR_MASK = 0xC0FFEE << 8;
+
 }

@@ -4,7 +4,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.crypto.ptsys.Ptsys;
+import savemgo.nomad.packet.Packet;
+import savemgo.nomad.packet.ResultError;
 
 public class Packets {
 
@@ -26,6 +29,20 @@ public class Packets {
 			byte b = (byte) (buffer.getByte(index) ^ Constants.PACKET_SCRAMBLER_BYTES[index % 4]);
 			buffer.setByte(index, b);
 			index++;
+		}
+	}
+
+	public static int getResult(ResultError error) {
+		if (error.isOfficial()) {
+			return error.getCode();
+		}
+		return Constants.PACKET_ERROR_MASK | error.getCode();
+	}
+
+	public static void writeError(ChannelHandlerContext ctx, int command, ResultError error) {
+		if (error != null) {
+			int result = getResult(error);
+			ctx.write(new Packet(command, result));
 		}
 	}
 

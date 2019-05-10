@@ -31,7 +31,7 @@ public class GameLobby extends NomadLobby {
 			break;
 
 		default:
-			logger.printf(Level.DEBUG, "Couldn't handle command : %04x", in.getCommand());
+			logger.printf(Level.DEBUG, "Couldn't handle command %04x", in.getCommand());
 			return false;
 		}
 

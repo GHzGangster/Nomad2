@@ -9,7 +9,6 @@ import savemgo.nomad.NomadLobby;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.packet.PayloadGroup;
 import savemgo.nomad.util.Buffers;
-import savemgo.nomad.util.ByteBufEx;
 
 public class Hub {
 
@@ -43,15 +42,11 @@ public class Hub {
 				restriction |= expansion ? 0b1000 : 0;
 				restriction |= noHeadshot ? 0b10000 : 0;
 
-				var box = ByteBufEx.get(bo);
-				try {
-					bo.writeInt(i).writeInt(lobby.getType());
-					box.writeStringFill(lobby.getName(), 16).writeStringFill(lobby.getIp(), 15);
-					bo.writeShort(lobby.getPort()).writeShort(lobby.getPlayers()).writeShort(lobby.getId())
-							.writeByte(restriction);
-				} finally {
-					box.recycle();
-				}
+				bo.writeInt(i).writeInt(lobby.getType());
+				Buffers.writeStringFill(bo, lobby.getName(), 16);
+				Buffers.writeStringFill(bo, lobby.getIp(), 15);
+				bo.writeShort(lobby.getPort()).writeShort(lobby.getPlayers()).writeShort(lobby.getId())
+						.writeByte(restriction);
 			});
 
 			ctx.write(new Packet(0x2002));
@@ -66,11 +61,7 @@ public class Hub {
 	}
 
 	public static void test(ChannelHandlerContext ctx) {
-//		byte[] array = { (byte) 0xde, (byte) 0xad, (byte) 0xbe, (byte) 0xef };
-//		ByteBuf buffer = Unpooled.wrappedBuffer(array);
-//		ctx.write(new Packet(0x2005, buffer));
 
-		ctx.write(new Packet(0x2002));
 	}
 
 	public static void getNews(ChannelHandlerContext ctx) {

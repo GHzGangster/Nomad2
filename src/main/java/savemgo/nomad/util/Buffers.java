@@ -1,18 +1,21 @@
 package savemgo.nomad.util;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.util.Recycler;
-import io.netty.util.Recycler.Handle;
-import savemgo.nomad.packet.Packet;
+import io.netty.util.CharsetUtil;
 import savemgo.nomad.packet.PayloadElementConsumer;
 import savemgo.nomad.packet.PayloadGroup;
 
 public class Buffers {
 
 	public static final ByteBufAllocator ALLOCATOR = PooledByteBufAllocator.DEFAULT;
-	
+
 	public static void release(ByteBuf buffer) {
 		if (buffer != null && buffer.refCnt() > 0) {
 			buffer.release();
@@ -62,6 +65,66 @@ public class Buffers {
 		var payloads = new PayloadGroup();
 		payloads.setBuffers(buffers);
 		return payloads;
+	}
+
+	public static String readString(ByteBuf buffer, int maxLength) {
+		return readString(buffer, maxLength, CharsetUtil.ISO_8859_1);
+	}
+
+	public static String readString(ByteBuf buffer, int maxLength, Charset charset) {
+		int indexStart = buffer.readerIndex();
+		int readLength = Math.min(buffer.readableBytes(), maxLength);
+
+		int stringLength = readLength;
+		for (int i = 0; i < readLength; i++) {
+			int val = (int) buffer.readByte();
+			if (val == 0x00) {
+				stringLength = i;
+				break;
+			}
+		}
+
+		if (stringLength > 0) {
+			return buffer.toString(indexStart, stringLength, charset);
+		}
+		return "";
+	}
+
+	public static void writeStringFill(ByteBuf buffer, String str, int length) throws CharacterCodingException {
+		writeStringFill(buffer, str, length, CharsetUtil.ISO_8859_1);
+	}
+
+	public static void writeStringFill(ByteBuf buffer, String str, int length, Charset charset)
+			throws CharacterCodingException {
+		var byteBuffer = ByteBuffer.allocate(length);
+		var charBuffer = CharBuffer.wrap(str);
+
+		var ce = charset.newEncoder();
+		ce.encode(charBuffer, byteBuffer, true);
+		byteBuffer.position(0);
+
+		buffer.writeBytes(byteBuffer);
+	}
+
+	public static void moveReadableToStart(ByteBuf buffer) {
+		int length = buffer.readableBytes();
+		int longCount = length >>> 3;
+		int byteCount = length & 7;
+
+		int readerIndex = buffer.readerIndex();
+		buffer.setIndex(0, 0);
+
+		for (int i = longCount; i > 0; i--) {
+			long l = buffer.getLong(readerIndex);
+			buffer.writeLong(l);
+			readerIndex += 8;
+		}
+
+		for (int i = byteCount; i > 0; i--) {
+			byte b = buffer.getByte(readerIndex);
+			buffer.writeByte(b);
+			readerIndex++;
+		}
 	}
 
 }

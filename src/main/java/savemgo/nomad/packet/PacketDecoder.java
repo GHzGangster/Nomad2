@@ -18,7 +18,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.AttributeKey;
 import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.util.Buffers;
-import savemgo.nomad.util.ByteBufEx;
 import savemgo.nomad.util.Constants;
 import savemgo.nomad.util.Packets;
 
@@ -168,12 +167,7 @@ public class PacketDecoder extends ChannelInboundHandlerAdapter {
 			}
 
 			// Reset the buffer
-			var bufferEx = ByteBufEx.get(buffer);
-			try {
-				bufferEx.moveReadableToStart();
-			} finally {
-				bufferEx.recycle();
-			}
+			Buffers.moveReadableToStart(buffer);
 		} catch (Exception e) {
 			logger.error("Failed to decode packet.", e);
 		} finally {
