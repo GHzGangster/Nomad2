@@ -8,6 +8,7 @@ public class Packet {
 
 	private int result;
 	private ByteBuf payload;
+	private byte[] payloadBytes;
 
 	public Packet() {
 
@@ -25,6 +26,11 @@ public class Packet {
 	public Packet(int command, ByteBuf payload) {
 		this.command = (short) command;
 		this.payload = payload;
+	}
+
+	public Packet(int command, byte[] payload) {
+		this.command = (short) command;
+		this.payloadBytes = payload;
 	}
 
 	public int getCommand() {
@@ -50,5 +56,13 @@ public class Packet {
 	public void setResult(int result) {
 		this.result = result;
 	}
-	
+
+	public byte[] getPayloadBytes() {
+		return payloadBytes;
+	}
+
+	public void setPayloadBytes(byte[] payloadBytes) {
+		this.payloadBytes = payloadBytes;
+	}
+
 }

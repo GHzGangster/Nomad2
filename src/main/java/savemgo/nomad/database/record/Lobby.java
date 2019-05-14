@@ -16,19 +16,6 @@ public class Lobby {
 
 	}
 
-	public Lobby(int id, int type, int subtype, String name, String ip, int port, int players, String settings,
-			int version) {
-		this.id = id;
-		this.type = type;
-		this.subtype = subtype;
-		this.name = name;
-		this.ip = ip;
-		this.port = port;
-		this.players = players;
-		this.settings = settings;
-		this.version = version;
-	}
-
 	public int getId() {
 		return id;
 	}

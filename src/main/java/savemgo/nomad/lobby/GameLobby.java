@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import savemgo.nomad.NomadLobby;
-import savemgo.nomad.helper.Hub;
+import savemgo.nomad.helper.Users;
 import savemgo.nomad.packet.Packet;
+import savemgo.nomad.server.NomadLobby;
 
 @Sharable
 public class GameLobby extends NomadLobby {
@@ -21,13 +21,9 @@ public class GameLobby extends NomadLobby {
 
 		switch (command) {
 
-		/** Main Lobby */
-		case 0x2005:
-			Hub.getLobbyList(ctx);
-			break;
-
-		case 0x2008:
-//			Hub.getNews(ctx);
+		/** Users */
+		case 0x3003:
+			Users.setSession(ctx, in, false);
 			break;
 
 		default:

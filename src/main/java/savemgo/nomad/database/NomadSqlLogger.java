@@ -14,7 +14,7 @@ public class NomadSqlLogger implements SqlLogger {
 	}
 
 	public void logAfterExecution(StatementContext context) {
-
+		
 	}
 
 	public void logException(StatementContext context) {

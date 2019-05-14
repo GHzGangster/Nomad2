@@ -5,26 +5,18 @@ import org.apache.logging.log4j.Logger;
 
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.Nomad;
-import savemgo.nomad.NomadLobby;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.packet.PayloadGroup;
+import savemgo.nomad.server.NomadLobby;
 import savemgo.nomad.util.Buffers;
 
 public class Hub {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	/**
-	 * TODO: Add support for constant packets (don't release after writing) ... we
-	 * will need to release eventually though... might have to skip out on this if
-	 * it has a bytebuf ... may be okay if we use a byte array?
-	 * 
-	 * TODO: Add support for having a result as the payload (actually write the
-	 * result as the payload!)
-	 */
-
-	private static final Packet LOBBYLIST_START = new Packet(0x4901, 0xdeadbeef);
-	private static final Packet LOBBYLIST_END = new Packet(0x4903, 0);
+	private static final Packet LOBBYLIST_START = new Packet(0x2002,
+			new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 });
+	private static final Packet LOBBYLIST_END = new Packet(0x2004, 0);
 
 	public static void getLobbyList(ChannelHandlerContext ctx) {
 		PayloadGroup payloads = null;
@@ -49,11 +41,11 @@ public class Hub {
 						.writeByte(restriction);
 			});
 
-			ctx.write(new Packet(0x2002));
+			ctx.write(LOBBYLIST_START);
 			for (var payload : payloads.getBuffers()) {
 				ctx.write(new Packet(0x2003, payload));
 			}
-			ctx.write(new Packet(0x2004));
+			ctx.write(LOBBYLIST_END);
 		} catch (Exception e) {
 			logger.error("getLobbyList: Exception occurred.", e);
 			Buffers.release(payloads);

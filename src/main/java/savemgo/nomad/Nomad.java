@@ -13,17 +13,23 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.mapper.JoinRow;
+import org.jdbi.v3.core.mapper.JoinRowMapper;
+import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.NomadSqlLogger;
+import savemgo.nomad.database.record.Character;
 import savemgo.nomad.database.record.Lobby;
+import savemgo.nomad.database.record.User;
 import savemgo.nomad.lobby.AccountLobby;
 import savemgo.nomad.lobby.GameLobby;
 import savemgo.nomad.lobby.GateLobby;
-import savemgo.nomad.packet.ResultError;
+import savemgo.nomad.server.NomadLobby;
+import savemgo.nomad.server.NomadLobbyServer;
 import savemgo.nomad.util.Util;
 
 public class Nomad {
@@ -57,6 +63,11 @@ public class Nomad {
 			DB.initialize(config);
 			DB.getJdbi().setSqlLogger(new NomadSqlLogger());
 
+			if (Math.sqrt(1) == 1) {
+				test();
+				return;
+			}
+
 			// Set up lobbies
 			setupLobbies();
 
@@ -70,15 +81,34 @@ public class Nomad {
 	}
 
 	private void test() {
-		ResultError error = ResultError.GENERAL;
-		try {
-			if (Math.sqrt(1) == 1) {
-				error = ResultError.INVALID_SESSION;
-				throw new Exception("invalid session");
+		int id = 1;
+		String sessionId = "9373ac86";
+
+		User user = null;
+		Character chara = null;
+		try (Handle handle = DB.open()) {
+			handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
+			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
+			handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Character.class));
+			
+			var row = handle.createQuery("SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until, "
+					+ "u.is_cfw u_iscfw, u.slots u_slots, "
+					+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, c.comment c_comment, "
+					+ "c.gameplay_options c_gameplay_options, c.active c_active, c.creation_time c_creation_time, c.lobby c_lobby "
+					+ "FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId")
+					.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
+			if (row != null) {				
+				user = row.get(User.class);
+				chara = row.get(Character.class);
 			}
-		} catch (Exception e) {
-			logger.error("test: Exception occurred.", e);
-			logger.debug("Error: {}", error);
+		}
+
+		if (user != null) {
+			logger.debug(user.getUsername());
+		}
+
+		if (chara != null) {
+			logger.debug(chara.getName());
 		}
 	}
 

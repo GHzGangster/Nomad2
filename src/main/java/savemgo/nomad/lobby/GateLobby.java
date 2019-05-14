@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import savemgo.nomad.NomadLobby;
 import savemgo.nomad.helper.Hub;
 import savemgo.nomad.packet.Packet;
+import savemgo.nomad.server.NomadLobby;
 
 @Sharable
 public class GateLobby extends NomadLobby {

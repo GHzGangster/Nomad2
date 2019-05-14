@@ -42,6 +42,8 @@ public class PacketEncoder extends ChannelOutboundHandlerAdapter {
 			logger.printf(Level.DEBUG, "Sent %04x", packet.getCommand());
 			if (packet.getPayload() != null) {
 				logger.debug(ByteBufUtil.hexDump(packet.getPayload()));
+			} else if (packet.getPayloadBytes() != null) {
+				logger.debug(ByteBufUtil.hexDump(packet.getPayloadBytes()));
 			} else {
 				logger.printf(Level.DEBUG, "%08x", packet.getResult());
 			}
@@ -53,6 +55,8 @@ public class PacketEncoder extends ChannelOutboundHandlerAdapter {
 			int length = 4;
 			if (packet.getPayload() != null) {
 				length = packet.getPayload().readableBytes();
+			} else if (packet.getPayloadBytes() != null) {
+				length = packet.getPayloadBytes().length;
 			}
 
 			// Figure out if payload should be encrypted, and figure out the padding
@@ -83,11 +87,14 @@ public class PacketEncoder extends ChannelOutboundHandlerAdapter {
 			if (payloadLength > 0) {
 				if (packet.getPayload() != null) {
 					buffer.writeBytes(packet.getPayload());
-					if (padding > 0) {
-						buffer.writeZero(padding);
-					}
+				} else if (packet.getPayloadBytes() != null) {
+					buffer.writeBytes(packet.getPayloadBytes());
 				} else {
 					buffer.writeInt(packet.getResult());
+				}
+				
+				if (padding > 0) {
+					buffer.writeZero(padding);
 				}
 			}
 

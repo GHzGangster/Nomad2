@@ -1,4 +1,4 @@
-package savemgo.nomad;
+package savemgo.nomad.server;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
