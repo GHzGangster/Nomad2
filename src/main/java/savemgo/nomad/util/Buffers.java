@@ -9,7 +9,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.CharsetUtil;
-import savemgo.nomad.packet.PayloadElementConsumer;
+import savemgo.nomad.packet.PayloadGroupConsumer;
 import savemgo.nomad.packet.PayloadGroup;
 
 public class Buffers {
@@ -31,7 +31,7 @@ public class Buffers {
 	}
 
 	public static PayloadGroup createPayloads(int elementCount, int elementSize, int maxElements,
-			PayloadElementConsumer consumer) throws Exception {
+			PayloadGroupConsumer consumer) throws Exception {
 		int full = elementCount / maxElements;
 		int partial = elementCount % maxElements;
 

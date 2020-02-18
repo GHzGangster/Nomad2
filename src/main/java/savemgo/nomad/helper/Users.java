@@ -40,7 +40,7 @@ public class Users {
 			Ptsys.encryptBlowfish(Packets.KEY_KIT, bi, 0x4, bi, 0x4, 0x10);
 			var sessionId = Buffers.readString(bi, 0x10);
 			sessionId = sessionId.substring(0, 8);
-			logger.debug("getSession- Session id: {}", sessionId);
+			logger.debug("Session id: {}", sessionId);
 
 			// Get user and/or character by session id
 			User user = null;
@@ -50,8 +50,7 @@ public class Users {
 						SELECT id, username, role, banned_until, is_cfw, slots
 						FROM users
 						WHERE id=:id AND session=:sessionId
-						""")
-						.bind("id", id).bind("sessionId", sessionId).mapToBean(User.class).findOne().orElse(null);
+						""").bind("id", id).bind("sessionId", sessionId).mapToBean(User.class).findOne().orElse(null);
 			} else {
 				handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
 				handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
@@ -60,11 +59,11 @@ public class Users {
 				var row = handle.createQuery("""
 						SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until,
 						u.is_cfw u_iscfw, u.slots u_slots,
-						c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, c.comment c_comment,
-						c.gameplay_options c_gameplay_options, c.active c_active, c.creation_time c_creation_time, c.lobby c_lobby
+						c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank,
+						c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active,
+						c.creation_time c_creation_time, c.lobby c_lobby
 						FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId
-						""")
-						.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
+						""").bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
 				if (row != null) {
 					user = row.get(User.class);
 					chara = row.get(Character.class);
@@ -113,18 +112,18 @@ public class Users {
 			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
 			handle.registerRowMapper(BeanMapper.factory(CharacterAppearance.class, "a"));
 			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
-			
+
 			var rows = handle.createQuery("""
-					SELECT c.id c_id, c.name c_name, c.name_prefix c_name_prefix, 
-					a.gender a_gender, a.face a_face, a.voice a_voice, a.voice_pitch a_voice_pitch, 
-					a.head a_head, a.head_color a_head_color, a.upper a_upper, a.upper_color a_upper_color, 
-					a.lower a_lower, a.lower_color a_lower_color, a.chest a_chest, a.chest_color a_chest_color, 
-					a.waist a_waist, a.waist_color a_waist_color, a.hands a_hands, a.hands_color a_hands_color, 
-					a.feet a_feet, a.feet_color a_feet_color, a.accessory1 a_accessory1, a.accessory1_color a_accessory1_color, 
-					a.accessory2 a_accessory2, a.accessory2_color a_accessory2_color, a.face_paint a_face_paint 
+					SELECT c.id c_id, c.name c_name, c.name_prefix c_name_prefix,
+					a.gender a_gender, a.face a_face, a.voice a_voice, a.voice_pitch a_voice_pitch,
+					a.head a_head, a.head_color a_head_color, a.upper a_upper, a.upper_color a_upper_color,
+					a.lower a_lower, a.lower_color a_lower_color, a.chest a_chest, a.chest_color a_chest_color,
+					a.waist a_waist, a.waist_color a_waist_color, a.hands a_hands, a.hands_color a_hands_color,
+					a.feet a_feet, a.feet_color a_feet_color, a.accessory1 a_accessory1,
+					a.accessory1_color a_accessory1_color, a.accessory2 a_accessory2,
+					a.accessory2_color a_accessory2_color, a.face_paint a_face_paint
 					FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user
-					""")
-					.bind("user", user.getId()).mapTo(JoinRow.class).list();
+					""").bind("user", user.getId()).mapTo(JoinRow.class).list();
 
 			int numCharacters = rows.size();
 

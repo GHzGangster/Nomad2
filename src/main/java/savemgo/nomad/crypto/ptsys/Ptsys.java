@@ -1,14 +1,9 @@
 package savemgo.nomad.crypto.ptsys;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.netty.buffer.ByteBuf;
 import net.sourceforge.blowfishj.crypt.BlowfishECB;
 
 public class Ptsys {
-
-	private static final Logger logger = LogManager.getLogger();
 
 	/**
 	 * Base key

@@ -48,7 +48,7 @@ public class DB {
 
 		time = System.currentTimeMillis() - time;
 		if (time >= 1000) {
-			logger.debug("jdbiOpen took a long time: {} ms", time);
+			logger.debug("open- Took a long time: {} ms", time);
 		}
 
 		return handle;
