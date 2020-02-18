@@ -6,103 +6,191 @@ import org.jdbi.v3.core.mapper.JoinRow;
 import org.jdbi.v3.core.mapper.JoinRowMapper;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.record.Character;
+import savemgo.nomad.database.record.CharacterAppearance;
 import savemgo.nomad.database.record.User;
+import savemgo.nomad.local.LocalUser;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.packet.ResultError;
-import savemgo.nomad.session.NomadUser;
+import savemgo.nomad.packet.PacketError;
 import savemgo.nomad.util.Buffers;
 import savemgo.nomad.util.Packets;
-import savemgo.nomad.util.Sessions;
+import savemgo.nomad.util.LocalUsers;
+import savemgo.nomad.util.Util;
 
 public class Users {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private static final Packet SETSESSION_OK = new Packet(0x3004, 0);
+	private static final Packet GETSESSION_OK = new Packet(0x3004, 0);
 
-	public static void setSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby) {
-		ResultError error = null;
+	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby) {
+		PacketError error = null;
 		try (var handle = DB.open()) {
 			var bi = in.getPayload();
 
-			// Get id
+			// Read id
 			int id = bi.readInt();
 
-			// Get session id
+			// Read session id
 			// TODO: Use 16 char session ids in gidauth, and don't trim here
 			Ptsys.encryptBlowfish(Packets.KEY_KIT, bi, 0x4, bi, 0x4, 0x10);
 			var sessionId = Buffers.readString(bi, 0x10);
 			sessionId = sessionId.substring(0, 8);
-			logger.debug("Session id: {}", sessionId);
+			logger.debug("getSession- Session id: {}", sessionId);
 
-			// Check session id
+			// Get user and/or character by session id
 			User user = null;
 			Character chara = null;
 			if (isAccountLobby) {
-				user = handle.createQuery(
-						"SELECT id, username, role, banned_until, is_cfw, slots FROM users WHERE id=:id AND session=:sessionId")
+				user = handle.createQuery("""
+						SELECT id, username, role, banned_until, is_cfw, slots
+						FROM users
+						WHERE id=:id AND session=:sessionId
+						""")
 						.bind("id", id).bind("sessionId", sessionId).mapToBean(User.class).findOne().orElse(null);
 			} else {
 				handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
 				handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
 				handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Character.class));
-				
-				var row = handle.createQuery("SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until, "
-						+ "u.is_cfw u_iscfw, u.slots u_slots, "
-						+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, c.comment c_comment, "
-						+ "c.gameplay_options c_gameplay_options, c.active c_active, c.creation_time c_creation_time, c.lobby c_lobby "
-						+ "FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId")
+
+				var row = handle.createQuery("""
+						SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until,
+						u.is_cfw u_iscfw, u.slots u_slots,
+						c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, c.comment c_comment,
+						c.gameplay_options c_gameplay_options, c.active c_active, c.creation_time c_creation_time, c.lobby c_lobby
+						FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId
+						""")
 						.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
-				if (row != null) {				
+				if (row != null) {
 					user = row.get(User.class);
 					chara = row.get(Character.class);
 				}
 			}
 
 			if (user == null) {
-				logger.error("Invalid session: {}", sessionId);
-				error = ResultError.INVALID_SESSION;
+				logger.error("getSession- Invalid session: {}", sessionId);
+				error = PacketError.INVALID_SESSION;
 				return;
 			}
 
 			// TODO: Check banned_until
 
-			// TODO: Get user as well, and pass it to onLobbyJoin
-
 			// Start session on server
 			onLobbyJoin(ctx, user, chara);
 
-			ctx.write(SETSESSION_OK);
+			ctx.write(GETSESSION_OK);
 		} catch (Exception e) {
-			logger.error("setSession: Exception occurred.", e);
-			error = ResultError.GENERAL;
+			logger.error("getSession- Exception occurred.", e);
+			error = PacketError.GENERAL;
 		} finally {
 			Packets.writeError(ctx, 0x3004, error);
 		}
 	}
 
+	private static final byte[] CHARACTERLIST_UNK = { (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x07,
+			(byte) 0x00, (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+
+	public static void getCharacterList(ChannelHandlerContext ctx) {
+		PacketError error = null;
+		ByteBuf bo = null;
+		try (var handle = DB.open()) {
+			// Get session user
+			var user = LocalUsers.get(ctx);
+			if (user == null) {
+				logger.error("getCharacterList- Couldn't get user.");
+				error = PacketError.INVALID_SESSION;
+				return;
+			}
+
+			// Get character and appearance
+			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
+			handle.registerRowMapper(BeanMapper.factory(CharacterAppearance.class, "a"));
+			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
+			
+			var rows = handle.createQuery("""
+					SELECT c.id c_id, c.name c_name, c.name_prefix c_name_prefix, 
+					a.gender a_gender, a.face a_face, a.voice a_voice, a.voice_pitch a_voice_pitch, 
+					a.head a_head, a.head_color a_head_color, a.upper a_upper, a.upper_color a_upper_color, 
+					a.lower a_lower, a.lower_color a_lower_color, a.chest a_chest, a.chest_color a_chest_color, 
+					a.waist a_waist, a.waist_color a_waist_color, a.hands a_hands, a.hands_color a_hands_color, 
+					a.feet a_feet, a.feet_color a_feet_color, a.accessory1 a_accessory1, a.accessory1_color a_accessory1_color, 
+					a.accessory2 a_accessory2, a.accessory2_color a_accessory2_color, a.face_paint a_face_paint 
+					FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user
+					""")
+					.bind("user", user.getId()).mapTo(JoinRow.class).list();
+
+			int numCharacters = rows.size();
+
+			// Create payload
+			bo = Buffers.ALLOCATOR.directBuffer(0x1d7);
+			bo.writeInt(0).writeByte(user.getSlots()).writeByte(numCharacters).writeZero(1);
+
+			// Write characters
+			for (int i = 0; i < rows.size(); i++) {
+				var row = rows.get(i);
+				var chara = row.get(Character.class);
+				var appearance = row.get(CharacterAppearance.class);
+
+				if (i == 0) {
+					Buffers.writeStringFill(bo, Util.getFullCharacterName(chara), 16);
+					bo.writeZero(1);
+				} else {
+					bo.writeInt(i);
+				}
+
+				bo.writeInt(chara.getId());
+				Buffers.writeStringFill(bo, Util.getFullCharacterName(chara), 16);
+				bo.writeByte(appearance.getGender()).writeByte(appearance.getFace()).writeByte(appearance.getUpper())
+						.writeByte(appearance.getLower()).writeByte(appearance.getFacePaint())
+						.writeByte(appearance.getUpperColor()).writeByte(appearance.getLowerColor())
+						.writeByte(appearance.getVoice()).writeByte(appearance.getVoicePitch()).writeZero(4)
+						.writeByte(appearance.getHead()).writeByte(appearance.getChest())
+						.writeByte(appearance.getHands()).writeByte(appearance.getWaist())
+						.writeByte(appearance.getFeet()).writeByte(appearance.getAccessory1())
+						.writeByte(appearance.getAccessory2()).writeByte(appearance.getHeadColor())
+						.writeByte(appearance.getChestColor()).writeByte(appearance.getHandsColor())
+						.writeByte(appearance.getWaistColor()).writeByte(appearance.getFeetColor())
+						.writeByte(appearance.getAccessory1Color()).writeByte(appearance.getAccessory2Color())
+						.writeZero(1);
+			}
+
+			// Write unknown bytes. Affects ability to create female characters.
+			bo.writeZero(0x1b4 - bo.writerIndex());
+			bo.writeBytes(CHARACTERLIST_UNK);
+
+			// Write payload
+			ctx.write(new Packet(0x3049, bo));
+		} catch (Exception e) {
+			logger.error("getCharacterList- Exception occurred.", e);
+			error = PacketError.GENERAL;
+			Buffers.release(bo);
+		} finally {
+			Packets.writeError(ctx, 0x3049, error);
+		}
+	}
+
 	public static void onLobbyJoin(ChannelHandlerContext ctx, User user, Character chara) {
-		var nUser = new NomadUser();
-		nUser.setId(user.getId());
-		nUser.setUsername(user.getUsername());
-		nUser.setRole(user.getRole());
-		nUser.setBannedUntil(user.getBannedUntil());
-		nUser.setIsCfw(user.getIsCfw());
+		var localUser = new LocalUser();
+		localUser.setId(user.getId());
+		localUser.setUsername(user.getUsername());
+		localUser.setRole(user.getRole());
+		localUser.setSystem(user.getSystem());
 		if (chara != null) {
-			nUser.setChara(chara.getId());
-		} else {
-			nUser.setChara(null);
+			localUser.setChara(chara.getId());
 		}
 
-		Sessions.add(ctx.channel(), nUser);
+		LocalUsers.add(ctx.channel(), localUser);
 	}
 
 	public static void onLobbyLeave(ChannelHandlerContext ctx) {
-
+		LocalUsers.remove(ctx.channel());
 	}
 
 }

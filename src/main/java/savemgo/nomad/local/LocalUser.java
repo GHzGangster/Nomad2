@@ -1,15 +1,15 @@
-package savemgo.nomad.session;
+package savemgo.nomad.local;
 
-public class NomadUser {
+public class LocalUser {
 
 	private int id;
 	private String username;
 	private int role;
-	private Integer bannedUntil;
-	private int isCfw;
+	private int system;
 	private Integer chara;
+	private int slots;
 
-	public NomadUser() {
+	public LocalUser() {
 
 	}
 
@@ -37,12 +37,12 @@ public class NomadUser {
 		this.role = role;
 	}
 
-	public int getIsCfw() {
-		return isCfw;
+	public int getSystem() {
+		return system;
 	}
 
-	public void setIsCfw(int isCfw) {
-		this.isCfw = isCfw;
+	public void setSystem(int system) {
+		this.system = system;
 	}
 
 	public Integer getChara() {
@@ -53,12 +53,12 @@ public class NomadUser {
 		this.chara = chara;
 	}
 
-	public Integer getBannedUntil() {
-		return bannedUntil;
+	public int getSlots() {
+		return slots;
 	}
 
-	public void setBannedUntil(Integer bannedUntil) {
-		this.bannedUntil = bannedUntil;
+	public void setSlots(int slots) {
+		this.slots = slots;
 	}
 
 }

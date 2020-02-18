@@ -22,7 +22,7 @@ public class AccountLobby extends NomadLobby {
 		switch (command) {
 
 		case 0x3003:
-			Users.setSession(ctx, in, true);
+			Users.getSession(ctx, in, true);
 			break;
 
 		default:

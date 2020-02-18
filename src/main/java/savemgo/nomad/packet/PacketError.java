@@ -1,6 +1,6 @@
 package savemgo.nomad.packet;
 
-public enum ResultError {
+public enum PacketError {
 
 	/** General */
 	NOT_IMPLEMENTED(0xff),
@@ -33,11 +33,11 @@ public enum ResultError {
 	private int code;
 	private boolean official = false;
 	
-	ResultError(int code) {
+	PacketError(int code) {
 		this.code = code;
 	}
 	
-	ResultError(int code, boolean official) {
+	PacketError(int code, boolean official) {
 		this.code = code;
 		this.official = official;
 	}

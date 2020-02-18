@@ -27,7 +27,7 @@ public class GateLobby extends NomadLobby {
 			break;
 
 		case 0x2008:
-//			Hub.getNews(ctx);
+			Hub.getNewsList(ctx);
 			break;
 
 		default:

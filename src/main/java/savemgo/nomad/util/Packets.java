@@ -1,17 +1,12 @@
 package savemgo.nomad.util;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.packet.ResultError;
+import savemgo.nomad.packet.PacketError;
 
 public class Packets {
-
-	private static final Logger logger = LogManager.getLogger();
 
 	public static byte[] KEY_KIT = null;
 
@@ -32,14 +27,14 @@ public class Packets {
 		}
 	}
 
-	public static int getResult(ResultError error) {
+	public static int getResult(PacketError error) {
 		if (error.isOfficial()) {
 			return error.getCode();
 		}
 		return Constants.PACKET_ERROR_MASK | error.getCode();
 	}
 
-	public static void writeError(ChannelHandlerContext ctx, int command, ResultError error) {
+	public static void writeError(ChannelHandlerContext ctx, int command, PacketError error) {
 		if (error != null) {
 			int result = getResult(error);
 			ctx.write(new Packet(command, result));

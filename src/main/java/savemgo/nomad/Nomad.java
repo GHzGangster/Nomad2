@@ -23,8 +23,8 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.NomadSqlLogger;
 import savemgo.nomad.database.record.Character;
+import savemgo.nomad.database.record.CharacterAppearance;
 import savemgo.nomad.database.record.Lobby;
-import savemgo.nomad.database.record.User;
 import savemgo.nomad.lobby.AccountLobby;
 import savemgo.nomad.lobby.GameLobby;
 import savemgo.nomad.lobby.GateLobby;
@@ -46,10 +46,10 @@ public class Nomad {
 	}
 
 	public static Nomad get() {
-		if (Nomad.INSTANCE == null) {
-			Nomad.INSTANCE = new Nomad();
+		if (INSTANCE == null) {
+			INSTANCE = new Nomad();
 		}
-		return Nomad.INSTANCE;
+		return INSTANCE;
 	}
 
 	void init() {
@@ -63,10 +63,10 @@ public class Nomad {
 			DB.initialize(config);
 			DB.getJdbi().setSqlLogger(new NomadSqlLogger());
 
-			if (Math.sqrt(1) == 1) {
-				test();
-				return;
-			}
+//			if (Math.sqrt(1) == 1) {
+//				test();
+//				return;
+//			}
 
 			// Set up lobbies
 			setupLobbies();
@@ -81,34 +81,60 @@ public class Nomad {
 	}
 
 	private void test() {
+//		int id = 1;
+//		String sessionId = "6fd464a1";
+//
+//		User user = null;
+//		Character chara = null;
+//		try (Handle handle = DB.open()) {
+//			handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
+//			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
+//			handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Character.class));
+//
+//			var row = handle.createQuery(
+//					"SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until, "
+//							+ "u.is_cfw u_iscfw, u.slots u_slots, "
+//							+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.name_prefix c_name_prefix, c.rank c_rank, "
+//							+ "c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active, "
+//							+ "c.creation_time c_creation_time, c.lobby c_lobby "
+//							+ "FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId")
+//					.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
+//			if (row != null) {
+//				user = row.get(User.class);
+//				chara = row.get(Character.class);
+//			}
+//		}
+//
+//		if (user != null) {
+//			logger.debug("User: {}", user.getUsername());
+//		}
+//
+//		if (chara != null) {
+//			logger.debug("Character: {}", Util.getFullCharacterName(chara));
+//		}
+
 		int id = 1;
-		String sessionId = "9373ac86";
 
-		User user = null;
-		Character chara = null;
 		try (Handle handle = DB.open()) {
-			handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
 			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
-			handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Character.class));
-			
-			var row = handle.createQuery("SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until, "
-					+ "u.is_cfw u_iscfw, u.slots u_slots, "
-					+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, c.comment c_comment, "
-					+ "c.gameplay_options c_gameplay_options, c.active c_active, c.creation_time c_creation_time, c.lobby c_lobby "
-					+ "FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId")
-					.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
-			if (row != null) {				
-				user = row.get(User.class);
-				chara = row.get(Character.class);
+			handle.registerRowMapper(BeanMapper.factory(CharacterAppearance.class, "a"));
+			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
+
+			var rows = handle.createQuery("SELECT c.id c_id, c.name c_name, a.gender a_gender, a.head a_head "
+					+ "FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user")
+					.bind("user", id).mapTo(JoinRow.class).list();
+			for (var row : rows) {
+				var chara = row.get(Character.class);
+				var appearance = row.get(CharacterAppearance.class);
+
+				if (chara != null) {
+					logger.debug("Character: {}", Util.getFullCharacterName(chara));
+				}
+
+				if (appearance != null) {
+					logger.debug("Appearance head: {}", appearance.getHead());
+				}
 			}
-		}
-
-		if (user != null) {
-			logger.debug(user.getUsername());
-		}
-
-		if (chara != null) {
-			logger.debug(chara.getName());
 		}
 	}
 

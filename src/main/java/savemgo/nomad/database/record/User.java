@@ -6,7 +6,7 @@ public class User {
 	private String username;
 	private int role;
 	private int bannedUntil;
-	private int isCfw;
+	private int system;
 	private int slots;
 	private int chara;
 	private int version;
@@ -47,12 +47,12 @@ public class User {
 		this.bannedUntil = bannedUntil;
 	}
 
-	public int getIsCfw() {
-		return isCfw;
+	public int getSystem() {
+		return system;
 	}
 
-	public void setIsCfw(int isCfw) {
-		this.isCfw = isCfw;
+	public void setSystem(int system) {
+		this.system = system;
 	}
 
 	public int getSlots() {

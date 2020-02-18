@@ -6,6 +6,7 @@ public class Character {
 	private int user;
 	private String name;
 	private String oldName;
+	private String namePrefix;
 	private int rank;
 	private String comment;
 	private String gameplayOptions;
@@ -104,6 +105,14 @@ public class Character {
 
 	public void setVersion(int version) {
 		this.version = version;
+	}
+
+	public String getNamePrefix() {
+		return namePrefix;
+	}
+
+	public void setNamePrefix(String namePrefix) {
+		this.namePrefix = namePrefix;
 	}
 
 }

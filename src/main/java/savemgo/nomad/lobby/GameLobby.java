@@ -23,7 +23,7 @@ public class GameLobby extends NomadLobby {
 
 		/** Users */
 		case 0x3003:
-			Users.setSession(ctx, in, false);
+			Users.getSession(ctx, in, false);
 			break;
 
 		default:
