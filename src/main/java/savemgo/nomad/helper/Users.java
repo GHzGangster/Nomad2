@@ -140,7 +140,7 @@ public class Users {
 			bo.writeInt(0).writeByte(user.getSlots()).writeByte(numCharacters).writeZero(1);
 
 			// Write characters
-			for (int i = 0; i < rows.size(); i++) {
+			for (int i = 0; i < numCharacters; i++) {
 				var row = rows.get(i);
 				var chara = row.get(Chara.class);
 				var appearance = row.get(CharaAppearance.class);
@@ -302,7 +302,7 @@ public class Users {
 			int gender = bi.readByte();
 			int face = bi.readByte();
 			int upper = bi.readByte();
-			int lower = 0;
+			int lower = 22;
 			bi.skipBytes(1);
 			int facePaint = bi.readByte();
 			int upperColor = bi.readByte();
@@ -373,7 +373,7 @@ public class Users {
 			appearance.setHands(hands);
 			appearance.setHandsColor(handsColor);
 			appearance.setFeet(feet);
-			appearance.setFeet(feetColor);
+			appearance.setFeetColor(feetColor);
 			appearance.setAccessory1(accessory1);
 			appearance.setAccessory1Color(accessory1Color);
 			appearance.setAccessory2(accessory2);
@@ -433,7 +433,7 @@ public class Users {
 
 			bo = ctx.alloc().directBuffer(8);
 			bo.writeInt(0).writeInt(chara.getId());
-			
+
 			ctx.write(new Packet(0x3102, bo));
 		} catch (Exception e) {
 			logger.error("createCharacter- Exception occurred.", e);
