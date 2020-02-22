@@ -5,14 +5,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jdbi.v3.core.Handle;
 
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -36,14 +37,16 @@ public class Nomad {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private boolean running = false;
-	private Config config = new Config();
+	private boolean running;
+	private Config config;
 	private List<LobbyServer> servers = new ArrayList<>();
+
+	private ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	private Nomad() {
 		try {
 			// Load config
-			Path path = Paths.get("config.json");
+			var path = Paths.get("config.json");
 			String jsonString = Files.readString(path);
 			config = Util.MAPPER.readValue(jsonString, Config.class);
 
@@ -56,11 +59,11 @@ public class Nomad {
 //				return;
 //			}
 
-			// Set up lobbies
-			var handler = createLobbyHandlers();
+			// Set up lobbies and start servers
+			var handlers = createLobbyHandlers();
+			run(handlers);
 
-			// Start the server
-			run(handler);
+			// Stop other services
 
 			logger.debug("Done.");
 		} catch (Exception e) {
@@ -150,13 +153,13 @@ public class Nomad {
 			throws IllegalAccessException, InvocationTargetException, IllegalArgumentException {
 		var handlers = new ArrayList<LobbyHandler>();
 
-		try (Handle handle = DB.open()) {
+		try (var handle = DB.open()) {
 			// Get lobbies from database
 			var dbLobbies = handle.createQuery("SELECT * FROM mgo2_lobbies WHERE id IN (<ids>)")
 					.bindList("ids", config.getLobbies()).mapToBean(Lobby.class).list();
 
 			// Create lobby instances
-			for (Lobby dbLobby : dbLobbies) {
+			for (var dbLobby : dbLobbies) {
 				// TODO: Think about having lobbies on remote servers...
 				// We would want a var in LocalLobby to be able to tell.
 				// For example, if it's remote, then don't update player count
@@ -198,12 +201,27 @@ public class Nomad {
 		try {
 			var executors = new DefaultEventExecutorGroup(config.getServerWorkers());
 
+			// Start lobbies
 			try {
 				start(boss, workers, executors, handlers);
+				running = true;
+
+				// Start console handler
+				executor.execute(() -> handleConsole());
 			} catch (Exception e) {
 				logger.error("Exception occurred while starting.", e);
 			}
 
+			// Await stop
+			while (running) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					logger.error("Exception occurred while running.", e);
+				}
+			}
+
+			// Stop lobbies
 			try {
 				stop();
 			} catch (Exception e) {
@@ -212,6 +230,15 @@ public class Nomad {
 		} finally {
 			workers.shutdownGracefully();
 			boss.shutdownGracefully();
+
+			executor.shutdown();
+			try {
+				if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+					executor.shutdownNow();
+				}
+			} catch (InterruptedException e) {
+				executor.shutdownNow();
+			}
 		}
 	}
 
@@ -219,36 +246,21 @@ public class Nomad {
 			List<LobbyHandler> handlers) {
 		logger.info("Starting...");
 
-		// Start lobby servers
 		for (LobbyHandler handler : handlers) {
-			LobbyServer server = new LobbyServer(boss, workers, executors, handler);
+			var server = new LobbyServer(boss, workers, executors, handler);
 			server.start();
-			
+			servers.add(server);
+
 			LocalLobbies.add(server.getHandler().getLobby());
 
 			logger.info("Started lobby {} on {}:{}", handler.getLobby().getName(), handler.getLobby().getIp(),
 					handler.getLobby().getPort());
-		}
-
-		running = true;
-
-		// Listen to the console so we can stop gracefully
-		startConsoleListener();
-
-		// Sleep while running
-		while (running) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				logger.error("Exception occurred while running.", e);
-			}
 		}
 	}
 
 	private void stop() {
 		logger.info("Stopping...");
 
-		// Stop lobbies
 		for (LobbyServer server : servers) {
 			server.stop();
 
@@ -256,25 +268,23 @@ public class Nomad {
 		}
 	}
 
-	private void startConsoleListener() {
-		new Thread(() -> {
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-			String line = null;
-			while (running) {
-				try {
-					line = bufferedReader.readLine();
-				} catch (IOException e) {
+	private void handleConsole() {
+		var bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+		String line = null;
+		while (running) {
+			try {
+				line = bufferedReader.readLine();
+			} catch (IOException e) {
 
-				}
-				if (line != null) {
-					if (line.equals("stop")) {
-						running = false;
-					} else if (line.equals("test")) {
-						test();
-					}
+			}
+			if (line != null) {
+				if (line.equals("stop")) {
+					running = false;
+				} else if (line.equals("test")) {
+					test();
 				}
 			}
-		}).start();
+		}
 	}
 
 	public static void main(String[] args) {
