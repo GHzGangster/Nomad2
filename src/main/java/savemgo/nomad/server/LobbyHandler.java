@@ -6,26 +6,18 @@ import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.ReadTimeoutException;
+import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.util.Buffers;
 
-public abstract class NomadLobby extends ChannelInboundHandlerAdapter {
+public abstract class LobbyHandler extends ChannelInboundHandlerAdapter {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private int id;
-	private int type;
-	private int subtype;
-	private String name;
-	private String ip;
-	private int port;
-	private int players;
-	private String settings;
+	private LocalLobby lobby;
 
-	private NomadLobbyServer server;
-
-	public NomadLobby() {
-
+	public LobbyHandler(LocalLobby lobby) {
+		this.lobby = lobby;
 	}
 
 	public abstract boolean onPacket(ChannelHandlerContext ctx, Packet ins);
@@ -103,76 +95,8 @@ public abstract class NomadLobby extends ChannelInboundHandlerAdapter {
 		}
 	}
 
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
-	}
-
-	public int getType() {
-		return type;
-	}
-
-	public void setType(int type) {
-		this.type = type;
-	}
-
-	public int getSubtype() {
-		return subtype;
-	}
-
-	public void setSubtype(int subtype) {
-		this.subtype = subtype;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getIp() {
-		return ip;
-	}
-
-	public void setIp(String ip) {
-		this.ip = ip;
-	}
-
-	public int getPort() {
-		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
-	}
-
-	public int getPlayers() {
-		return players;
-	}
-
-	public void setPlayers(int players) {
-		this.players = players;
-	}
-
-	public String getSettings() {
-		return settings;
-	}
-
-	public void setSettings(String settings) {
-		this.settings = settings;
-	}
-
-	public NomadLobbyServer getServer() {
-		return server;
-	}
-
-	public void setServer(NomadLobbyServer server) {
-		this.server = server;
+	public LocalLobby getLobby() {
+		return lobby;
 	}
 
 }

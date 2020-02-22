@@ -13,46 +13,34 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.mapper.JoinRow;
-import org.jdbi.v3.core.mapper.JoinRowMapper;
-import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
+import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.database.DB;
-import savemgo.nomad.database.NomadSqlLogger;
-import savemgo.nomad.database.record.Character;
-import savemgo.nomad.database.record.CharacterAppearance;
+import savemgo.nomad.database.DBLogger;
 import savemgo.nomad.database.record.Lobby;
 import savemgo.nomad.lobby.AccountLobby;
 import savemgo.nomad.lobby.GameLobby;
 import savemgo.nomad.lobby.GateLobby;
-import savemgo.nomad.server.NomadLobby;
-import savemgo.nomad.server.NomadLobbyServer;
+import savemgo.nomad.local.LocalLobby;
+import savemgo.nomad.local.util.LocalLobbies;
+import savemgo.nomad.server.LobbyHandler;
+import savemgo.nomad.server.LobbyServer;
 import savemgo.nomad.util.Util;
 
 public class Nomad {
 
-	private static Nomad INSTANCE = null;
 	private static final Logger logger = LogManager.getLogger();
 
 	private boolean running = false;
 	private Config config = new Config();
-	private List<NomadLobby> lobbies = new ArrayList<>();
+	private List<LobbyServer> servers = new ArrayList<>();
 
 	private Nomad() {
-
-	}
-
-	public static Nomad get() {
-		if (INSTANCE == null) {
-			INSTANCE = new Nomad();
-		}
-		return INSTANCE;
-	}
-
-	void init() {
 		try {
 			// Load config
 			Path path = Paths.get("config.json");
@@ -61,7 +49,7 @@ public class Nomad {
 
 			// Init database
 			DB.initialize(config);
-			DB.getJdbi().setSqlLogger(new NomadSqlLogger());
+			DB.getJdbi().setSqlLogger(new DBLogger());
 
 //			if (Math.sqrt(1) == 1) {
 //				test();
@@ -69,10 +57,10 @@ public class Nomad {
 //			}
 
 			// Set up lobbies
-			setupLobbies();
+			var handler = createLobbyHandlers();
 
 			// Start the server
-			run();
+			run(handler);
 
 			logger.debug("Done.");
 		} catch (Exception e) {
@@ -113,72 +101,105 @@ public class Nomad {
 //			logger.debug("Character: {}", Util.getFullCharacterName(chara));
 //		}
 
-		int id = 1;
+//		int id = 1;
+//
+//		try (Handle handle = DB.open()) {
+//			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
+//			handle.registerRowMapper(BeanMapper.factory(CharacterAppearance.class, "a"));
+//			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
+//
+//			var rows = handle.createQuery("SELECT c.id c_id, c.name c_name, a.gender a_gender, a.head a_head "
+//					+ "FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user")
+//					.bind("user", id).mapTo(JoinRow.class).list();
+//			for (var row : rows) {
+//				var chara = row.get(Character.class);
+//				var appearance = row.get(CharacterAppearance.class);
+//
+//				if (chara != null) {
+//					logger.debug("Character: {}", Util.getFullCharacterName(chara));
+//				}
+//
+//				if (appearance != null) {
+//					logger.debug("Appearance head: {}", appearance.getHead());
+//				}
+//			}
+//		}
 
-		try (Handle handle = DB.open()) {
-			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
-			handle.registerRowMapper(BeanMapper.factory(CharacterAppearance.class, "a"));
-			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
+		byte[] bytes1 = { (byte) 0x71, (byte) 0x69, (byte) 0xD8, (byte) 0x20, (byte) 0x46, (byte) 0x00, (byte) 0x10,
+				(byte) 0xF8, (byte) 0x5B, (byte) 0xFC, (byte) 0x37, (byte) 0x19, (byte) 0xBF, (byte) 0xB0, (byte) 0x9E,
+				(byte) 0x7C, (byte) 0xB7, (byte) 0xEC, (byte) 0x0B, (byte) 0xA3, (byte) 0xAF, (byte) 0x89, (byte) 0xC2,
+				(byte) 0xC0 };
 
-			var rows = handle.createQuery("SELECT c.id c_id, c.name c_name, a.gender a_gender, a.head a_head "
-					+ "FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user")
-					.bind("user", id).mapTo(JoinRow.class).list();
-			for (var row : rows) {
-				var chara = row.get(Character.class);
-				var appearance = row.get(CharacterAppearance.class);
+		byte[] bytes2 = { (byte) 0xC3, (byte) 0x5E, (byte) 0x6A, (byte) 0x17, (byte) 0xF4, (byte) 0x37, (byte) 0xA2,
+				(byte) 0xCF, (byte) 0xE9, (byte) 0xCB, (byte) 0x85, (byte) 0x2E, (byte) 0x0D, (byte) 0x87, (byte) 0x2C,
+				(byte) 0x4B, (byte) 0x05, (byte) 0xDB, (byte) 0xB9, (byte) 0x94, (byte) 0x1D, (byte) 0xBE, (byte) 0x70,
+				(byte) 0xF7 };
 
-				if (chara != null) {
-					logger.debug("Character: {}", Util.getFullCharacterName(chara));
-				}
+		byte[] key = Ptsys.decryptKey(Ptsys.KEY_6);
 
-				if (appearance != null) {
-					logger.debug("Appearance head: {}", appearance.getHead());
-				}
-			}
-		}
+		var bi = Unpooled.wrappedBuffer(bytes1);
+		Ptsys.decrypt(key, bi, 0, bi, 0, 0x18);
+		System.out.println(ByteBufUtil.prettyHexDump(bi));
+
+		bi = Unpooled.wrappedBuffer(bytes2);
+		Ptsys.decrypt(key, bi, 0, bi, 0, 0x18);
+		System.out.println(ByteBufUtil.prettyHexDump(bi));
 	}
 
-	private void setupLobbies() throws IllegalAccessException, InvocationTargetException {
-		// Get lobbies from database
-		List<Lobby> dbLobbies = null;
+	private List<LobbyHandler> createLobbyHandlers()
+			throws IllegalAccessException, InvocationTargetException, IllegalArgumentException {
+		var handlers = new ArrayList<LobbyHandler>();
+
 		try (Handle handle = DB.open()) {
-			dbLobbies = handle.createQuery("SELECT * FROM mgo2_lobbies WHERE id IN (<ids>)")
+			// Get lobbies from database
+			var dbLobbies = handle.createQuery("SELECT * FROM mgo2_lobbies WHERE id IN (<ids>)")
 					.bindList("ids", config.getLobbies()).mapToBean(Lobby.class).list();
+
+			// Create lobby instances
+			for (Lobby dbLobby : dbLobbies) {
+				// TODO: Think about having lobbies on remote servers...
+				// We would want a var in LocalLobby to be able to tell.
+				// For example, if it's remote, then don't update player count
+				// ourselves, query the DB for it instead.
+				var localLobby = new LocalLobby();
+				localLobby.setId(dbLobby.getId());
+				localLobby.setType(dbLobby.getType());
+				localLobby.setSubtype(dbLobby.getSubtype());
+				localLobby.setName(dbLobby.getName());
+				localLobby.setIp(dbLobby.getIp());
+				localLobby.setPort(dbLobby.getPort());
+				localLobby.setSettings(dbLobby.getSettings());
+
+				LobbyHandler handler = null;
+				switch (dbLobby.getType()) {
+				case Lobby.TYPE_GATE:
+					handler = new GateLobby(localLobby);
+					break;
+				case Lobby.TYPE_ACCOUNT:
+					handler = new AccountLobby(localLobby);
+					break;
+				case Lobby.TYPE_GAME:
+					handler = new GameLobby(localLobby);
+					break;
+				default:
+					throw new IllegalArgumentException("setupLobbies- Unknown lobby type.");
+				}
+
+				handlers.add(handler);
+			}
 		}
 
-		// Create lobby instances
-		for (Lobby dbLobby : dbLobbies) {
-			NomadLobby lobby = null;
-			if (dbLobby.getType() == 0) {
-				lobby = new GateLobby();
-			} else if (dbLobby.getType() == 1) {
-				lobby = new AccountLobby();
-			} else if (dbLobby.getType() == 2) {
-				lobby = new GameLobby();
-			}
-
-			if (lobby != null) {
-				lobby.setId(dbLobby.getId());
-				lobby.setType(dbLobby.getType());
-				lobby.setSubtype(dbLobby.getSubtype());
-				lobby.setName(dbLobby.getName());
-				lobby.setIp(dbLobby.getIp());
-				lobby.setPort(dbLobby.getPort());
-				lobby.setPlayers(dbLobby.getPlayers());
-
-				lobbies.add(lobby);
-			}
-		}
+		return handlers;
 	}
 
-	private void run() {
+	private void run(List<LobbyHandler> handlers) {
 		var boss = new NioEventLoopGroup(1);
 		var workers = new NioEventLoopGroup();
 		try {
 			var executors = new DefaultEventExecutorGroup(config.getServerWorkers());
 
 			try {
-				start(boss, workers, executors);
+				start(boss, workers, executors, handlers);
 			} catch (Exception e) {
 				logger.error("Exception occurred while starting.", e);
 			}
@@ -194,16 +215,19 @@ public class Nomad {
 		}
 	}
 
-	private void start(NioEventLoopGroup boss, NioEventLoopGroup workers, EventExecutorGroup executors) {
+	private void start(NioEventLoopGroup boss, NioEventLoopGroup workers, EventExecutorGroup executors,
+			List<LobbyHandler> handlers) {
 		logger.info("Starting...");
 
 		// Start lobby servers
-		for (NomadLobby lobby : lobbies) {
-			NomadLobbyServer server = new NomadLobbyServer(boss, workers, executors, lobby);
+		for (LobbyHandler handler : handlers) {
+			LobbyServer server = new LobbyServer(boss, workers, executors, handler);
 			server.start();
-			lobby.setServer(server);
+			
+			LocalLobbies.add(server.getHandler().getLobby());
 
-			logger.info("Started lobby {} on {}:{}", lobby.getName(), lobby.getIp(), lobby.getPort());
+			logger.info("Started lobby {} on {}:{}", handler.getLobby().getName(), handler.getLobby().getIp(),
+					handler.getLobby().getPort());
 		}
 
 		running = true;
@@ -225,11 +249,10 @@ public class Nomad {
 		logger.info("Stopping...");
 
 		// Stop lobbies
-		for (NomadLobby lobby : lobbies) {
-			NomadLobbyServer server = lobby.getServer();
+		for (LobbyServer server : servers) {
 			server.stop();
 
-			logger.info("Stopped lobby {}", lobby.getName());
+			logger.info("Stopped lobby {}", server.getHandler().getLobby().getName());
 		}
 	}
 
@@ -254,12 +277,8 @@ public class Nomad {
 		}).start();
 	}
 
-	public Config getConfig() {
-		return config;
-	}
-
-	public List<NomadLobby> getLobbies() {
-		return lobbies;
+	public static void main(String[] args) {
+		new Nomad();
 	}
 
 }

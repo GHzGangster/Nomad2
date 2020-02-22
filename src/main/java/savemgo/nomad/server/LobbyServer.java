@@ -13,15 +13,18 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.EventExecutorGroup;
 import savemgo.nomad.util.Constants;
 
-public class NomadLobbyServer {
+public class LobbyServer {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private ServerBootstrap sb;
 	private ChannelFuture future;
+	private LobbyHandler handler;
 
-	public NomadLobbyServer(EventLoopGroup boss, EventLoopGroup workers, EventExecutorGroup executors,
-			NomadLobby lobby) {
+	public LobbyServer(EventLoopGroup boss, EventLoopGroup workers, EventExecutorGroup executors,
+			LobbyHandler handler) {
+		this.handler = handler;
+
 		sb = new ServerBootstrap();
 		sb.group(boss, workers);
 		sb.channel(NioServerSocketChannel.class);
@@ -34,8 +37,8 @@ public class NomadLobbyServer {
 		sb.childOption(ChannelOption.SO_SNDBUF, 65535);
 		sb.childOption(ChannelOption.SO_RCVBUF, 65535);
 
-		sb.childHandler(new NomadLobbyHandler(executors, lobby));
-		sb.localAddress(lobby.getIp(), lobby.getPort());
+		sb.childHandler(new LobbyChannelInitializer(executors, handler));
+		sb.localAddress(handler.getLobby().getIp(), handler.getLobby().getPort());
 	}
 
 	public void start() {
@@ -53,6 +56,10 @@ public class NomadLobbyServer {
 
 	public ChannelFuture getFuture() {
 		return future;
+	}
+
+	public LobbyHandler getHandler() {
+		return handler;
 	}
 
 }

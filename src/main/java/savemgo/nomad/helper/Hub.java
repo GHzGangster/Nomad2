@@ -8,10 +8,11 @@ import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.Nomad;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.record.News;
+import savemgo.nomad.local.util.LocalLobbies;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.packet.PacketError;
 import savemgo.nomad.packet.PayloadGroup;
-import savemgo.nomad.server.NomadLobby;
+import savemgo.nomad.server.LobbyHandler;
 import savemgo.nomad.util.Buffers;
 import savemgo.nomad.util.Packets;
 
@@ -28,12 +29,12 @@ public class Hub {
 		PayloadGroup payloads = null;
 		try {
 			// Get lobbies running on this instance
-			var lobbies = Nomad.get().getLobbies();
+			var lobbies = LocalLobbies.get();
 			var iterator = lobbies.iterator();
 
 			// Create payloads
 			payloads = Buffers.createPayloads(lobbies.size(), 0x2e, 22, (bo, i) -> {
-				NomadLobby lobby = iterator.next();
+				var lobby = iterator.next();
 
 				boolean beginner = false, expansion = false, noHeadshot = false;
 

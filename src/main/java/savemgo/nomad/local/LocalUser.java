@@ -2,11 +2,14 @@ package savemgo.nomad.local;
 
 public class LocalUser {
 
+	// TODO: Make sure that we only really store things that we need to use more
+	// than once, and doesn't change often.
+
 	private int id;
 	private String username;
 	private int role;
 	private int system;
-	private Integer chara;
+	private LocalCharacter character;
 	private int slots;
 
 	public LocalUser() {
@@ -45,12 +48,12 @@ public class LocalUser {
 		this.system = system;
 	}
 
-	public Integer getChara() {
-		return chara;
+	public LocalCharacter getCharacter() {
+		return character;
 	}
 
-	public void setChara(Integer chara) {
-		this.chara = chara;
+	public void setCharacter(LocalCharacter character) {
+		this.character = character;
 	}
 
 	public int getSlots() {

@@ -7,15 +7,15 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import savemgo.nomad.packet.PacketDecoder;
 import savemgo.nomad.packet.PacketEncoder;
 
-public class NomadLobbyHandler extends ChannelInitializer<SocketChannel> {
+public class LobbyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
 	private static final PacketEncoder HANDLER_ENCODER = new PacketEncoder();
 	private static final PacketDecoder HANDLER_DECODER = new PacketDecoder();
 
-	private final NomadLobby lobby;
+	private final LobbyHandler lobby;
 	private final EventExecutorGroup executors;
 
-	public NomadLobbyHandler(EventExecutorGroup executors, NomadLobby lobby) {
+	public LobbyChannelInitializer(EventExecutorGroup executors, LobbyHandler lobby) {
 		this.executors = executors;
 		this.lobby = lobby;
 	}

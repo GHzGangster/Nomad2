@@ -1,5 +1,7 @@
 package savemgo.nomad.helper;
 
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdbi.v3.core.mapper.JoinRow;
@@ -7,18 +9,21 @@ import org.jdbi.v3.core.mapper.JoinRowMapper;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.database.DB;
 import savemgo.nomad.database.record.Character;
 import savemgo.nomad.database.record.CharacterAppearance;
 import savemgo.nomad.database.record.User;
+import savemgo.nomad.local.LocalCharacter;
+import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.local.LocalUser;
+import savemgo.nomad.local.util.LocalUsers;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.packet.PacketError;
 import savemgo.nomad.util.Buffers;
 import savemgo.nomad.util.Packets;
-import savemgo.nomad.util.LocalUsers;
 import savemgo.nomad.util.Util;
 
 public class Users {
@@ -27,7 +32,7 @@ public class Users {
 
 	private static final Packet GETSESSION_OK = new Packet(0x3004, 0);
 
-	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby) {
+	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
 		PacketError error = null;
 		try (var handle = DB.open()) {
 			var bi = in.getPayload();
@@ -47,7 +52,7 @@ public class Users {
 			Character chara = null;
 			if (isAccountLobby) {
 				user = handle.createQuery("""
-						SELECT id, username, role, banned_until, is_cfw, slots
+						SELECT id, username, role, banned_until, system, slots
 						FROM users
 						WHERE id=:id AND session=:sessionId
 						""").bind("id", id).bind("sessionId", sessionId).mapToBean(User.class).findOne().orElse(null);
@@ -58,11 +63,12 @@ public class Users {
 
 				var row = handle.createQuery("""
 						SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until,
-						u.is_cfw u_iscfw, u.slots u_slots,
+						u.system u_system, u.slots u_slots,
 						c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank,
 						c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active,
 						c.creation_time c_creation_time, c.lobby c_lobby
-						FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId
+						FROM users u JOIN mgo2_characters c ON c.user=u.id
+						WHERE u.session=:sessionId AND c.id=:id AND c.active=1
 						""").bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
 				if (row != null) {
 					user = row.get(User.class);
@@ -79,7 +85,7 @@ public class Users {
 			// TODO: Check banned_until
 
 			// Start session on server
-			onLobbyJoin(ctx, user, chara);
+			onLobbyJoin(ctx.channel(), localLobby, user, chara);
 
 			ctx.write(GETSESSION_OK);
 		} catch (Exception e) {
@@ -101,7 +107,7 @@ public class Users {
 		ByteBuf bo = null;
 		try (var handle = DB.open()) {
 			// Get session user
-			var user = LocalUsers.get(ctx);
+			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
 				logger.error("getCharacterList- Couldn't get user.");
 				error = PacketError.INVALID_SESSION;
@@ -122,7 +128,8 @@ public class Users {
 					a.feet a_feet, a.feet_color a_feet_color, a.accessory1 a_accessory1,
 					a.accessory1_color a_accessory1_color, a.accessory2 a_accessory2,
 					a.accessory2_color a_accessory2_color, a.face_paint a_face_paint
-					FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user
+					FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id
+					WHERE c.user=:user AND c.active=1
 					""").bind("user", user.getId()).mapTo(JoinRow.class).list();
 
 			int numCharacters = rows.size();
@@ -175,21 +182,79 @@ public class Users {
 		}
 	}
 
-	public static void onLobbyJoin(ChannelHandlerContext ctx, User user, Character chara) {
+	private static final Packet SELECTCHARACTER_OK = new Packet(0x3104, 0);
+
+	public static void selectCharacter(ChannelHandlerContext ctx, Packet in) {
+		PacketError error = null;
+		ByteBuf bo = null;
+		try (var handle = DB.open()) {
+			// Get session user
+			var user = LocalUsers.get(ctx.channel());
+			if (user == null) {
+				logger.error("selectCharacter- Couldn't get user.");
+				error = PacketError.INVALID_SESSION;
+				return;
+			}
+
+			var bi = in.getPayload();
+
+			// Read character index
+			int index = bi.readByte();
+
+			// Get characters
+			List<Character> characters = handle.createQuery("""
+					SELECT id
+					FROM mgo2_characters
+					WHERE user=:user AND active=1 
+					""").bind("user", user.getId()).mapToBean(Character.class).list();
+
+			int numCharacters = characters.size();
+			if (index < 0 || index > numCharacters - 1) {
+				index = 0;
+			}
+
+			Character character = characters.get(index);
+
+			// TODO: Set selected character id here to double-check it?
+			// Might not even really be worth doing it
+			// Could potentially be causing other issues
+
+			ctx.write(SELECTCHARACTER_OK);
+		} catch (Exception e) {
+			logger.error("selectCharacter- Exception occurred.", e);
+			error = PacketError.GENERAL;
+			Buffers.release(bo);
+		} finally {
+			Packets.writeError(ctx, 0x3104, error);
+		}
+	}
+
+	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Character chara) {
 		var localUser = new LocalUser();
 		localUser.setId(user.getId());
 		localUser.setUsername(user.getUsername());
 		localUser.setRole(user.getRole());
 		localUser.setSystem(user.getSystem());
+		localUser.setSlots(user.getSlots());
+
 		if (chara != null) {
-			localUser.setChara(chara.getId());
+			var localCharacter = new LocalCharacter();
+			localUser.setCharacter(localCharacter);
+
+			localCharacter.setUser(localUser);
+			localCharacter.setLobby(localLobby);
+
+			localCharacter.setId(chara.getId());
+			localCharacter.setName(chara.getName());
+			localCharacter.setNamePrefix(chara.getNamePrefix());
+			localCharacter.setActive(chara.getActive() == 1);
 		}
 
-		LocalUsers.add(ctx.channel(), localUser);
+		LocalUsers.add(channel, localUser);
 	}
 
-	public static void onLobbyLeave(ChannelHandlerContext ctx) {
-		LocalUsers.remove(ctx.channel());
+	public static void onLobbyLeave(Channel channel) {
+		LocalUsers.remove(channel);
 	}
 
 }

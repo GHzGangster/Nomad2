@@ -7,13 +7,18 @@ import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.helper.Hub;
+import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.server.NomadLobby;
+import savemgo.nomad.server.LobbyHandler;
 
 @Sharable
-public class GateLobby extends NomadLobby {
+public class GateLobby extends LobbyHandler {
 
 	private static final Logger logger = LogManager.getLogger();
+
+	public GateLobby(LocalLobby lobby) {
+		super(lobby);
+	}
 
 	@Override
 	public boolean onPacket(ChannelHandlerContext ctx, Packet in) {

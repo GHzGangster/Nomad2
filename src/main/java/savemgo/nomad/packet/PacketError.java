@@ -6,6 +6,7 @@ public enum PacketError {
 	NOT_IMPLEMENTED(0xff),
 	GENERAL(0x1),
 	INVALID_SESSION(0x2),
+	TEST(-160, true),
 	
 	/** User */
 	CHAR_NAMEINVALID(0x10),

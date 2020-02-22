@@ -7,13 +7,18 @@ import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.helper.Users;
+import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.server.NomadLobby;
+import savemgo.nomad.server.LobbyHandler;
 
 @Sharable
-public class GameLobby extends NomadLobby {
+public class GameLobby extends LobbyHandler {
 
 	private static final Logger logger = LogManager.getLogger();
+
+	public GameLobby(LocalLobby lobby) {
+		super(lobby);
+	}
 
 	@Override
 	public boolean onPacket(ChannelHandlerContext ctx, Packet in) {
@@ -23,7 +28,7 @@ public class GameLobby extends NomadLobby {
 
 		/** Users */
 		case 0x3003:
-			Users.getSession(ctx, in, false);
+			Users.getSession(ctx, in, false, getLobby());
 			break;
 
 		default:

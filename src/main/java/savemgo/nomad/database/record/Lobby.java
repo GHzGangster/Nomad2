@@ -2,6 +2,10 @@ package savemgo.nomad.database.record;
 
 public class Lobby {
 
+	public static final int TYPE_GATE = 0;
+	public static final int TYPE_ACCOUNT = 1;
+	public static final int TYPE_GAME = 2;
+
 	private int id;
 	private int type;
 	private int subtype;
