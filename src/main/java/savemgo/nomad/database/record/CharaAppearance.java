@@ -1,6 +1,6 @@
 package savemgo.nomad.database.record;
 
-public class CharacterAppearance {
+public class CharaAppearance {
 
 	private int id;
 	private int chara;
@@ -28,7 +28,7 @@ public class CharacterAppearance {
 	private int accessory2Color;
 	private int facePaint;
 
-	public CharacterAppearance() {
+	public CharaAppearance() {
 
 	}
 

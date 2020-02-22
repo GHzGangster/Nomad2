@@ -1,7 +1,5 @@
 package savemgo.nomad.helper;
 
-import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdbi.v3.core.mapper.JoinRow;
@@ -13,8 +11,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.database.DB;
-import savemgo.nomad.database.record.Character;
-import savemgo.nomad.database.record.CharacterAppearance;
+import savemgo.nomad.database.record.Chara;
+import savemgo.nomad.database.record.CharaAppearance;
 import savemgo.nomad.database.record.User;
 import savemgo.nomad.local.LocalCharacter;
 import savemgo.nomad.local.LocalLobby;
@@ -49,7 +47,7 @@ public class Users {
 
 			// Get user and/or character by session id
 			User user = null;
-			Character chara = null;
+			Chara chara = null;
 			if (isAccountLobby) {
 				user = handle.createQuery("""
 						SELECT id, username, role, banned_until, system, slots
@@ -58,8 +56,8 @@ public class Users {
 						""").bind("id", id).bind("sessionId", sessionId).mapToBean(User.class).findOne().orElse(null);
 			} else {
 				handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
-				handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
-				handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Character.class));
+				handle.registerRowMapper(BeanMapper.factory(Chara.class, "c"));
+				handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Chara.class));
 
 				var row = handle.createQuery("""
 						SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until,
@@ -67,12 +65,12 @@ public class Users {
 						c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank,
 						c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active,
 						c.creation_time c_creation_time, c.lobby c_lobby
-						FROM users u JOIN mgo2_characters c ON c.user=u.id
+						FROM users u JOIN mgo2_charas c ON c.user=u.id
 						WHERE u.session=:sessionId AND c.id=:id AND c.active=1
 						""").bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
 				if (row != null) {
 					user = row.get(User.class);
-					chara = row.get(Character.class);
+					chara = row.get(Chara.class);
 				}
 			}
 
@@ -109,15 +107,15 @@ public class Users {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
-				logger.error("getCharacterList- Couldn't get user.");
+				logger.error("getCharacterList- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
 			}
 
 			// Get character and appearance
-			handle.registerRowMapper(BeanMapper.factory(Character.class, "c"));
-			handle.registerRowMapper(BeanMapper.factory(CharacterAppearance.class, "a"));
-			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
+			handle.registerRowMapper(BeanMapper.factory(Chara.class, "c"));
+			handle.registerRowMapper(BeanMapper.factory(CharaAppearance.class, "a"));
+			handle.registerRowMapper(JoinRowMapper.forTypes(Chara.class, CharaAppearance.class));
 
 			var rows = handle.createQuery("""
 					SELECT c.id c_id, c.name c_name, c.name_prefix c_name_prefix,
@@ -128,7 +126,7 @@ public class Users {
 					a.feet a_feet, a.feet_color a_feet_color, a.accessory1 a_accessory1,
 					a.accessory1_color a_accessory1_color, a.accessory2 a_accessory2,
 					a.accessory2_color a_accessory2_color, a.face_paint a_face_paint
-					FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id
+					FROM mgo2_charas c JOIN mgo2_charas_appearance a ON a.chara=c.id
 					WHERE c.user=:user AND c.active=1
 					""").bind("user", user.getId()).mapTo(JoinRow.class).list();
 
@@ -141,8 +139,8 @@ public class Users {
 			// Write characters
 			for (int i = 0; i < rows.size(); i++) {
 				var row = rows.get(i);
-				var chara = row.get(Character.class);
-				var appearance = row.get(CharacterAppearance.class);
+				var chara = row.get(Chara.class);
+				var appearance = row.get(CharaAppearance.class);
 
 				if (i == 0) {
 					Buffers.writeStringFill(bo, Util.getFullCharacterName(chara), 16);
@@ -191,7 +189,7 @@ public class Users {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
-				logger.error("selectCharacter- Couldn't get user.");
+				logger.error("selectCharacter- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
 			}
@@ -202,22 +200,25 @@ public class Users {
 			int index = bi.readByte();
 
 			// Get characters
-			List<Character> characters = handle.createQuery("""
+			var characters = handle.createQuery("""
 					SELECT id
-					FROM mgo2_characters
+					FROM mgo2_charas
 					WHERE user=:user AND active=1 
-					""").bind("user", user.getId()).mapToBean(Character.class).list();
+					""").bind("user", user.getId()).mapToBean(Chara.class).list();
 
 			int numCharacters = characters.size();
 			if (index < 0 || index > numCharacters - 1) {
-				index = 0;
+				logger.error("selectCharacter- Index out of bounds.");
+				error = PacketError.GENERAL;
+				return;
 			}
 
-			Character character = characters.get(index);
-
-			// TODO: Set selected character id here to double-check it?
-			// Might not even really be worth doing it
-			// Could potentially be causing other issues
+			var character = characters.get(index);
+			if (!character.isActive()) {
+				logger.error("selectCharacter- Character not active.");
+				error = PacketError.GENERAL;
+				return;
+			}
 
 			ctx.write(SELECTCHARACTER_OK);
 		} catch (Exception e) {
@@ -229,7 +230,7 @@ public class Users {
 		}
 	}
 
-	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Character chara) {
+	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Chara chara) {
 		var localUser = new LocalUser();
 		localUser.setId(user.getId());
 		localUser.setUsername(user.getUsername());
@@ -247,7 +248,7 @@ public class Users {
 			localCharacter.setId(chara.getId());
 			localCharacter.setName(chara.getName());
 			localCharacter.setNamePrefix(chara.getNamePrefix());
-			localCharacter.setActive(chara.getActive() == 1);
+			localCharacter.setActive(chara.isActive());
 		}
 
 		LocalUsers.add(channel, localUser);

@@ -1,6 +1,6 @@
 package savemgo.nomad.database.record;
 
-public class Character {
+public class Chara {
 
 	private int id;
 	private int user;
@@ -10,12 +10,12 @@ public class Character {
 	private int rank;
 	private String comment;
 	private String gameplayOptions;
-	private int active;
+	private boolean active;
 	private int creationTime;
 	private int lobby;
 	private int version;
 
-	public Character() {
+	public Chara() {
 
 	}
 
@@ -75,11 +75,11 @@ public class Character {
 		this.gameplayOptions = gameplayOptions;
 	}
 
-	public int getActive() {
+	public boolean isActive() {
 		return active;
 	}
 
-	public void setActive(int active) {
+	public void setActive(boolean active) {
 		this.active = active;
 	}
 

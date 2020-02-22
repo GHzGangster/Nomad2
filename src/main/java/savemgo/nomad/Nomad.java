@@ -88,7 +88,7 @@ public class Nomad {
 //							+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.name_prefix c_name_prefix, c.rank c_rank, "
 //							+ "c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active, "
 //							+ "c.creation_time c_creation_time, c.lobby c_lobby "
-//							+ "FROM users u JOIN mgo2_characters c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId")
+//							+ "FROM users u JOIN mgo2_charas c ON c.user=u.id WHERE c.id=:id AND u.session=:sessionId")
 //					.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
 //			if (row != null) {
 //				user = row.get(User.class);
@@ -112,7 +112,7 @@ public class Nomad {
 //			handle.registerRowMapper(JoinRowMapper.forTypes(Character.class, CharacterAppearance.class));
 //
 //			var rows = handle.createQuery("SELECT c.id c_id, c.name c_name, a.gender a_gender, a.head a_head "
-//					+ "FROM mgo2_characters c JOIN mgo2_characters_appearance a ON a.chara=c.id WHERE c.user=:user")
+//					+ "FROM mgo2_charas c JOIN mgo2_charas_appearance a ON a.chara=c.id WHERE c.user=:user")
 //					.bind("user", id).mapTo(JoinRow.class).list();
 //			for (var row : rows) {
 //				var chara = row.get(Character.class);
