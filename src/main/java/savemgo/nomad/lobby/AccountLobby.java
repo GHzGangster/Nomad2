@@ -35,6 +35,10 @@ public class AccountLobby extends LobbyHandler {
 			Users.getCharacterList(ctx);
 			break;
 
+		case 0x3101:
+			Users.createCharacter(ctx, in);
+			break;
+
 		case 0x3103:
 			Users.selectCharacter(ctx, in);
 			break;

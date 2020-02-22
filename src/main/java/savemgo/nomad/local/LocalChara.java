@@ -1,6 +1,6 @@
 package savemgo.nomad.local;
 
-public class LocalCharacter {
+public class LocalChara {
 
 	// TODO: Make sure that we only really store things that we need to use more
 	// than once, and doesn't change often.
@@ -12,7 +12,7 @@ public class LocalCharacter {
 	private boolean active;
 	private LocalLobby lobby;
 
-	public LocalCharacter() {
+	public LocalChara() {
 
 	}
 

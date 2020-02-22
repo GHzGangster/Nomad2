@@ -90,7 +90,7 @@ public class Hub {
 				int messageLength = Math.min(item.getMessage().length(), 885);
 
 				// Create buffer
-				payloads.getBuffers()[i] = Buffers.ALLOCATOR.directBuffer(138 + messageLength);
+				payloads.getBuffers()[i] = ctx.alloc().directBuffer(138 + messageLength);
 				var bo = payloads.getBuffers()[i];
 
 				// Write news item

@@ -9,7 +9,7 @@ public class LocalUser {
 	private String username;
 	private int role;
 	private int system;
-	private LocalCharacter character;
+	private LocalChara character;
 	private int slots;
 
 	public LocalUser() {
@@ -48,11 +48,11 @@ public class LocalUser {
 		this.system = system;
 	}
 
-	public LocalCharacter getCharacter() {
+	public LocalChara getCharacter() {
 		return character;
 	}
 
-	public void setCharacter(LocalCharacter character) {
+	public void setCharacter(LocalChara character) {
 		this.character = character;
 	}
 
