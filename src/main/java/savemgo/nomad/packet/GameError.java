@@ -1,6 +1,6 @@
 package savemgo.nomad.packet;
 
-public enum PacketError {
+public enum GameError {
 
 	/** General */
 	CANTCONNECT(-0xf0, true), // start game error kicks out to title screen
@@ -15,6 +15,15 @@ public enum PacketError {
 	CHAR_NAMEINVALID(-0x106, true), //
 	CHAR_CANTDELETEYET(-0x10c, true), //
 	CHAR_CREATEBANNED(-0x125, true), //
+	LOBBY_IS_FULL(-0x191, true), //
+	CHAR_CANTBEUSED(-0x192, true), //
+	LOBBY_NO_ACCESS(-0x193, true), // -0x194, -0x195
+	LOBBY_IS_BUSY(-0x196, true), //
+	CHARACTER_LOGIN_RESTRICTED(-0x197, true), //
+	LOBBY_TOURNAMENT_TOO_EARLY(-0x44d, true), //
+	LOBBY_EXCEEDED_MATCHES(-0x460, true), // -0x461
+	LOBBY_TOURNAMENT_TOO_LATE(-0x462, true), //
+	LOBBY_TOURNAMENT_PLAYERS_ONLY(-0x463, true), //
 	CHAR_CANTDELETECLANLEADER(-0x4bc, true), //
 	CHAR_CANTDELETECLANJOIN(-0x4bc, true), //
 
@@ -35,11 +44,11 @@ public enum PacketError {
 	private int code;
 	private boolean official = false;
 
-	PacketError(int code) {
+	GameError(int code) {
 		this.code = code;
 	}
 
-	PacketError(int code, boolean official) {
+	GameError(int code, boolean official) {
 		this.code = code;
 		this.official = official;
 	}

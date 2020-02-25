@@ -85,7 +85,7 @@ public class Buffers {
 		}
 
 		buffer.readerIndex(indexStart + maxLength);
-		
+
 		if (stringLength > 0) {
 			return buffer.toString(indexStart, stringLength, charset);
 		}

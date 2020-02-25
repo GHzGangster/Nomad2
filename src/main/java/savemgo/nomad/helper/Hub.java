@@ -10,7 +10,7 @@ import savemgo.nomad.database.DB;
 import savemgo.nomad.database.record.News;
 import savemgo.nomad.local.util.LocalLobbies;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.packet.PacketError;
+import savemgo.nomad.packet.GameError;
 import savemgo.nomad.packet.PayloadGroup;
 import savemgo.nomad.server.LobbyHandler;
 import savemgo.nomad.util.Buffers;
@@ -26,7 +26,7 @@ public class Hub {
 
 	public static void getLobbyList(ChannelHandlerContext ctx)
 	{
-		PacketError error = null;
+		GameError error = null;
 		PayloadGroup payloads = null;
 		try
 		{
@@ -63,7 +63,7 @@ public class Hub {
 		{
 			logger.error("getLobbyList- Exception occurred.", e);
 			Buffers.release(payloads);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 		} finally
 		{
 			Packets.writeError(ctx, 0x2002, error);
@@ -76,7 +76,7 @@ public class Hub {
 
 	public static void getNewsList(ChannelHandlerContext ctx)
 	{
-		PacketError error = null;
+		GameError error = null;
 		PayloadGroup payloads = null;
 		try (var handle = DB.open())
 		{
@@ -116,7 +116,7 @@ public class Hub {
 		{
 			logger.error("getNewsList- Exception occurred.", e);
 			Buffers.release(payloads);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 		} finally
 		{
 			Packets.writeError(ctx, 0x2009, error);

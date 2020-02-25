@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.crypto.ptsys.Ptsys;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.packet.PacketError;
+import savemgo.nomad.packet.GameError;
 
 public class Packets {
 
@@ -27,14 +27,14 @@ public class Packets {
 		}
 	}
 
-	public static int getResult(PacketError error) {
+	public static int getResult(GameError error) {
 		if (error.isOfficial()) {
 			return error.getCode();
 		}
 		return Constants.PACKET_ERROR_MASK | error.getCode();
 	}
 
-	public static void writeError(ChannelHandlerContext ctx, int command, PacketError error) {
+	public static void writeError(ChannelHandlerContext ctx, int command, GameError error) {
 		if (error != null) {
 			int result = getResult(error);
 			ctx.write(new Packet(command, result));

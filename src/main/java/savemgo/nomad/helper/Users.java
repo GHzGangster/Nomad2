@@ -22,7 +22,7 @@ import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.local.LocalUser;
 import savemgo.nomad.local.util.LocalUsers;
 import savemgo.nomad.packet.Packet;
-import savemgo.nomad.packet.PacketError;
+import savemgo.nomad.packet.GameError;
 import savemgo.nomad.util.Buffers;
 import savemgo.nomad.util.Packets;
 import savemgo.nomad.util.Util;
@@ -34,7 +34,7 @@ public class Users {
 	private static final Packet GETSESSION_OK = new Packet(0x3004, 0);
 
 	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
-		PacketError error = null;
+		GameError error = null;
 		try (var handle = DB.open()) {
 			var bi = in.getPayload();
 
@@ -78,7 +78,7 @@ public class Users {
 
 			if (user == null) {
 				logger.error("getSession- Invalid session: {}", sessionId);
-				error = PacketError.INVALID_SESSION;
+				error = GameError.INVALID_SESSION;
 				return;
 			}
 
@@ -90,7 +90,7 @@ public class Users {
 			ctx.write(GETSESSION_OK);
 		} catch (Exception e) {
 			logger.error("getSession- Exception occurred.", e);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 		} finally {
 			Packets.writeError(ctx, 0x3004, error);
 		}
@@ -103,14 +103,14 @@ public class Users {
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
 	public static void getCharacterList(ChannelHandlerContext ctx) {
-		PacketError error = null;
+		GameError error = null;
 		ByteBuf bo = null;
 		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
 				logger.error("getCharacterList- Invalid session.");
-				error = PacketError.INVALID_SESSION;
+				error = GameError.INVALID_SESSION;
 				return;
 			}
 
@@ -173,7 +173,7 @@ public class Users {
 			ctx.write(new Packet(0x3049, bo));
 		} catch (Exception e) {
 			logger.error("getCharacterList- Exception occurred.", e);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 			Buffers.release(bo);
 		} finally {
 			Packets.writeError(ctx, 0x3049, error);
@@ -236,14 +236,14 @@ public class Users {
 			+ "}";
 
 	public static void createCharacter(ChannelHandlerContext ctx, Packet in) {
-		PacketError error = null;
+		GameError error = null;
 		ByteBuf bo = null;
 		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
 				logger.error("selectCharacter- Invalid session.");
-				error = PacketError.INVALID_SESSION;
+				error = GameError.INVALID_SESSION;
 				return;
 			}
 
@@ -280,11 +280,11 @@ public class Users {
 
 			if (name.startsWith("@Chara") || name.startsWith("GM") || name.equalsIgnoreCase("SaveMGO")) {
 				logger.error("createCharacter- Reserved prefix.");
-				error = PacketError.CHAR_NAMEINVALID;
+				error = GameError.CHAR_NAMEINVALID;
 				return;
 			} else if (!Util.checkName(name)) {
 				logger.error("createCharacter- Invalid name.");
-				error = PacketError.CHAR_NAMEINVALID;
+				error = GameError.CHAR_NAMEINVALID;
 				return;
 			}
 
@@ -293,7 +293,7 @@ public class Users {
 					+ "WHERE name=:name").bind("name", name).mapTo(Integer.class).findOne().orElse(0);
 			if (takenId != 0) {
 				logger.error("createCharacter- Name is taken.");
-				error = PacketError.CHAR_NAMETAKEN;
+				error = GameError.CHAR_NAMETAKEN;
 				return;
 			}
 
@@ -377,7 +377,7 @@ public class Users {
 			});
 
 			if (!success) {
-				error = PacketError.GENERAL;
+				error = GameError.GENERAL;
 				return;
 			}
 
@@ -387,7 +387,7 @@ public class Users {
 			ctx.write(new Packet(0x3102, bo));
 		} catch (Exception e) {
 			logger.error("createCharacter- Exception occurred.", e);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 			Buffers.release(bo);
 		} finally {
 			Packets.writeError(ctx, 0x3102, error);
@@ -397,14 +397,14 @@ public class Users {
 	private static final Packet SELECTCHARACTER_OK = new Packet(0x3104, 0);
 
 	public static void selectCharacter(ChannelHandlerContext ctx, Packet in) {
-		PacketError error = null;
+		GameError error = null;
 		ByteBuf bo = null;
 		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
 				logger.error("selectCharacter- Invalid session.");
-				error = PacketError.INVALID_SESSION;
+				error = GameError.INVALID_SESSION;
 				return;
 			}
 
@@ -421,14 +421,14 @@ public class Users {
 			int numCharacters = characters.size();
 			if (index < 0 || index > numCharacters - 1) {
 				logger.error("selectCharacter- Index out of bounds.");
-				error = PacketError.GENERAL;
+				error = GameError.GENERAL;
 				return;
 			}
 
 			ctx.write(SELECTCHARACTER_OK);
 		} catch (Exception e) {
 			logger.error("selectCharacter- Exception occurred.", e);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 			Buffers.release(bo);
 		} finally {
 			Packets.writeError(ctx, 0x3104, error);
@@ -438,14 +438,14 @@ public class Users {
 	private static final Packet DELETECHARACTER_OK = new Packet(0x3106, 0);
 
 	public static void deleteCharacter(ChannelHandlerContext ctx, Packet in) {
-		PacketError error = null;
+		GameError error = null;
 		ByteBuf bo = null;
 		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
 				logger.error("deleteCharacter- Invalid session.");
-				error = PacketError.INVALID_SESSION;
+				error = GameError.INVALID_SESSION;
 				return;
 			}
 
@@ -462,7 +462,7 @@ public class Users {
 			int numCharacters = characters.size();
 			if (index < 0 || index > numCharacters - 1) {
 				logger.error("deleteCharacter- Index out of bounds.");
-				error = PacketError.GENERAL;
+				error = GameError.GENERAL;
 				return;
 			}
 
@@ -475,7 +475,7 @@ public class Users {
 
 			if (!canDelete) {
 				logger.error("deleteCharacter- Too early to delete.");
-				error = PacketError.CHAR_CANTDELETEYET;
+				error = GameError.CHAR_CANTDELETEYET;
 				return;
 			}
 
@@ -485,7 +485,7 @@ public class Users {
 					+ "WHERE chara=:chara").bind("chara", character.getId()).mapTo(Integer.class).findOne().orElse(0);
 			if (clanMemberId != 0) {
 				logger.error("deleteCharacter- Character is still in a clan.");
-				error = PacketError.CHAR_CANTDELETECLANLEADER;
+				error = GameError.CHAR_CANTDELETECLANLEADER;
 				return;
 			}
 
@@ -504,14 +504,14 @@ public class Users {
 					.bind("old_name", character.getName()).execute();
 			if (updated == 0) {
 				logger.error("deleteCharacter- Failed to delete character.");
-				error = PacketError.GENERAL;
+				error = GameError.GENERAL;
 				return;
 			}
 
 			ctx.write(DELETECHARACTER_OK);
 		} catch (Exception e) {
 			logger.error("deleteCharacter- Exception occurred.", e);
-			error = PacketError.GENERAL;
+			error = GameError.GENERAL;
 			Buffers.release(bo);
 		} finally {
 			Packets.writeError(ctx, 0x3106, error);
