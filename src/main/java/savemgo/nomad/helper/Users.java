@@ -33,9 +33,11 @@ public class Users {
 
 	private static final Packet GETSESSION_OK = new Packet(0x3004, 0);
 
-	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
+	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby)
+	{
 		PacketError error = null;
-		try (var handle = DB.open()) {
+		try (var handle = DB.open())
+		{
 			var bi = in.getPayload();
 
 			// Read id
@@ -51,33 +53,36 @@ public class Users {
 			// Get user and/or character by session id
 			User user = null;
 			Chara chara = null;
-			if (isAccountLobby) {
-				user = handle.createQuery("""
-						SELECT id, username, role, banned_until, system, slots
-						FROM users
-						WHERE id=:id AND session=:sessionId
-						""").bind("id", id).bind("sessionId", sessionId).mapToBean(User.class).findOne().orElse(null);
-			} else {
+			if (isAccountLobby)
+			{
+				user = handle.createQuery("SELECT id, username, role, banned_until, system, slots " //
+						+ "FROM users " //
+						+ "WHERE id=:id AND session=:sessionId").bind("id", id).bind("sessionId", sessionId)
+						.mapToBean(User.class).findOne().orElse(null);
+			} else
+			{
 				handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
 				handle.registerRowMapper(BeanMapper.factory(Chara.class, "c"));
 				handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Chara.class));
 
-				var row = handle.createQuery("""
-						SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until,
-						u.system u_system, u.slots u_slots,
-						c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank,
-						c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active,
-						c.creation_time c_creation_time, c.lobby c_lobby
-						FROM users u JOIN mgo2_charas c ON c.user=u.id
-						WHERE u.session=:sessionId AND c.id=:id AND c.active=1
-						""").bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
-				if (row != null) {
+				var row = handle.createQuery(
+						"SELECT u.id u_id, u.username u_username, u.role u_role, u.banned_until u_banned_until, "
+								+ "u.system u_system, u.slots u_slots, "
+								+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, "
+								+ "c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active, "
+								+ "c.creation_time c_creation_time, c.lobby c_lobby "
+								+ "FROM users u JOIN mgo2_charas c ON c.user=u.id "
+								+ "WHERE u.session=:sessionId AND c.id=:id AND c.active=1")
+						.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
+				if (row != null)
+				{
 					user = row.get(User.class);
 					chara = row.get(Chara.class);
 				}
 			}
 
-			if (user == null) {
+			if (user == null)
+			{
 				logger.error("getSession- Invalid session: {}", sessionId);
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -89,10 +94,12 @@ public class Users {
 			onLobbyJoin(ctx.channel(), localLobby, user, chara);
 
 			ctx.write(GETSESSION_OK);
-		} catch (Exception e) {
+		} catch (Exception e)
+		{
 			logger.error("getSession- Exception occurred.", e);
 			error = PacketError.GENERAL;
-		} finally {
+		} finally
+		{
 			Packets.writeError(ctx, 0x3004, error);
 		}
 	}
@@ -103,13 +110,16 @@ public class Users {
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
-	public static void getCharacterList(ChannelHandlerContext ctx) {
+	public static void getCharacterList(ChannelHandlerContext ctx)
+	{
 		PacketError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
+		try (var handle = DB.open())
+		{
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
-			if (user == null) {
+			if (user == null)
+			{
 				logger.error("getCharacterList- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -120,18 +130,16 @@ public class Users {
 			handle.registerRowMapper(BeanMapper.factory(CharaAppearance.class, "a"));
 			handle.registerRowMapper(JoinRowMapper.forTypes(Chara.class, CharaAppearance.class));
 
-			var rows = handle.createQuery("""
-					SELECT c.id c_id, c.name c_name, c.name_prefix c_name_prefix,
-					a.gender a_gender, a.face a_face, a.voice a_voice, a.voice_pitch a_voice_pitch,
-					a.head a_head, a.head_color a_head_color, a.upper a_upper, a.upper_color a_upper_color,
-					a.lower a_lower, a.lower_color a_lower_color, a.chest a_chest, a.chest_color a_chest_color,
-					a.waist a_waist, a.waist_color a_waist_color, a.hands a_hands, a.hands_color a_hands_color,
-					a.feet a_feet, a.feet_color a_feet_color, a.accessory_1 a_accessory_1,
-					a.accessory_1_color a_accessory_1_color, a.accessory_2 a_accessory_2,
-					a.accessory_2_color a_accessory_2_color, a.face_paint a_face_paint
-					FROM mgo2_charas c JOIN mgo2_charas_appearance a ON a.chara=c.id
-					WHERE c.user=:user AND c.active=1
-					""").bind("user", user.getId()).mapTo(JoinRow.class).list();
+			var rows = handle.createQuery("SELECT c.id c_id, c.name c_name, c.name_prefix c_name_prefix, "
+					+ "a.gender a_gender, a.face a_face, a.voice a_voice, a.voice_pitch a_voice_pitch, "
+					+ "a.head a_head, a.head_color a_head_color, a.upper a_upper, a.upper_color a_upper_color, "
+					+ "a.lower a_lower, a.lower_color a_lower_color, a.chest a_chest, a.chest_color a_chest_color, "
+					+ "a.waist a_waist, a.waist_color a_waist_color, a.hands a_hands, a.hands_color a_hands_color, "
+					+ "a.feet a_feet, a.feet_color a_feet_color, a.accessory_1 a_accessory_1, "
+					+ "a.accessory_1_color a_accessory_1_color, a.accessory_2 a_accessory_2, "
+					+ "a.accessory_2_color a_accessory_2_color, a.face_paint a_face_paint "
+					+ "FROM mgo2_charas c JOIN mgo2_charas_appearance a ON a.chara=c.id "
+					+ "WHERE c.user=:user AND c.active=1").bind("user", user.getId()).mapTo(JoinRow.class).list();
 
 			int numCharacters = rows.size();
 
@@ -140,15 +148,18 @@ public class Users {
 			bo.writeInt(0).writeByte(user.getSlots()).writeByte(numCharacters).writeZero(1);
 
 			// Write characters
-			for (int i = 0; i < numCharacters; i++) {
+			for (int i = 0; i < numCharacters; i++)
+			{
 				var row = rows.get(i);
 				var chara = row.get(Chara.class);
 				var appearance = row.get(CharaAppearance.class);
 
-				if (i == 0) {
+				if (i == 0)
+				{
 					Buffers.writeStringFill(bo, Util.getFullCharacterName(chara), 16);
 					bo.writeZero(1);
-				} else {
+				} else
+				{
 					bo.writeInt(i);
 				}
 
@@ -174,122 +185,82 @@ public class Users {
 
 			// Write payload
 			ctx.write(new Packet(0x3049, bo));
-		} catch (Exception e) {
+		} catch (Exception e)
+		{
 			logger.error("getCharacterList- Exception occurred.", e);
 			error = PacketError.GENERAL;
 			Buffers.release(bo);
-		} finally {
+		} finally
+		{
 			Packets.writeError(ctx, 0x3049, error);
 		}
 	}
 
-	private static final Packet SELECTCHARACTER_OK = new Packet(0x3104, 0);
+	private static final String CREATECHARACTER_GAMEPLAYOPTIONS = "{" //
+			+ "\"onlineStatusMode\": 0," //
+			+ "\"emailFriendsOnly\": false," //
+			+ "\"receiveNotices\": true," //
+			+ "\"receiveInvites\": true," //
+			+ "\"normalViewVerticalInvert\": false," //
+			+ "\"normalViewHorizontalInvert\": false," //
+			+ "\"normalViewSpeed\": 5," //
+			+ "\"shoulderViewVerticalInvert\": false," //
+			+ "\"shoulderViewHorizontalInvert\": false," //
+			+ "\"shoulderViewSpeed\": 5," //
+			+ "\"firstViewVerticalInvert\": false," //
+			+ "\"firstViewHorizontalInvert\": false," //
+			+ "\"firstViewSpeed\": 5," //
+			+ "\"firstViewPlayerDirection\": true," //
+			+ "\"viewChangeSpeed\": 5," //
+			+ "\"firstViewMemory\": false," //
+			+ "\"radarLockNorth\": false," //
+			+ "\"radarFloorHide\": false," //
+			+ "\"hudDisplaySize\": 0," //
+			+ "\"hudHideNameTags\": false," //
+			+ "\"lockOnEnabled\": false," //
+			+ "\"weaponSwitchMode\": 2," //
+			+ "\"weaponSwitchA\": 0," //
+			+ "\"weaponSwitchB\": 1," //
+			+ "\"weaponSwitchC\": 2," //
+			+ "\"weaponSwitchNow\": 0," //
+			+ "\"weaponSwitchBefore\": 1," //
+			+ "\"itemSwitchMode\": 2," //
+			+ "\"codec1Name\": \"\"," //
+			+ "\"codec1a\": 1," //
+			+ "\"codec1b\": 3," //
+			+ "\"codec1c\": 4," //
+			+ "\"codec1d\": 2," //
+			+ "\"codec2Name\": \"\"," //
+			+ "\"codec2a\": 10," //
+			+ "\"codec2b\": 12," //
+			+ "\"codec2c\": 13," //
+			+ "\"codec2d\": 11," //
+			+ "\"codec3Name\": \"\"," //
+			+ "\"codec3a\": 14," //
+			+ "\"codec3b\": 16," //
+			+ "\"codec3c\": 17," //
+			+ "\"codec3d\": 15," //
+			+ "\"codec4Name\": \"\"," //
+			+ "\"codec4a\": 5," //
+			+ "\"codec4b\": 7," //
+			+ "\"codec4c\": 8," //
+			+ "\"codec4d\": 6," //
+			+ "\"voiceChatRecognitionLevel\": 5," //
+			+ "\"voiceChatVolume\": 5," //
+			+ "\"headsetVolume\": 5," //
+			+ "\"bgmVolume\": 10" //
+			+ "}";
 
-	public static void selectCharacter(ChannelHandlerContext ctx, Packet in) {
+	public static void createCharacter(ChannelHandlerContext ctx, Packet in)
+	{
 		PacketError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
-			// Get session user
-			var user = LocalUsers.get(ctx.channel());
-			if (user == null) {
-				logger.error("selectCharacter- Invalid session.");
-				error = PacketError.INVALID_SESSION;
-				return;
-			}
-
-			var bi = in.getPayload();
-
-			// Read character index
-			int index = bi.readByte();
-
-			// Get characters
-			var characters = handle.createQuery("""
-					SELECT id
-					FROM mgo2_charas
-					WHERE user=:user AND active=1 
-					""").bind("user", user.getId()).mapToBean(Chara.class).list();
-
-			int numCharacters = characters.size();
-			if (index < 0 || index > numCharacters - 1) {
-				logger.error("selectCharacter- Index out of bounds.");
-				error = PacketError.GENERAL;
-				return;
-			}
-
-			ctx.write(SELECTCHARACTER_OK);
-		} catch (Exception e) {
-			logger.error("selectCharacter- Exception occurred.", e);
-			error = PacketError.GENERAL;
-			Buffers.release(bo);
-		} finally {
-			Packets.writeError(ctx, 0x3104, error);
-		}
-	}
-
-	private static final String CREATECHARACTER_GAMEPLAYOPTIONS = """
+		try (var handle = DB.open())
 		{
-			"onlineStatusMode": 0,
-			"emailFriendsOnly": false,
-			"receiveNotices": true,
-			"receiveInvites": true,
-			"normalViewVerticalInvert": false,
-			"normalViewHorizontalInvert": false,
-			"normalViewSpeed": 5,
-			"shoulderViewVerticalInvert": false,
-			"shoulderViewHorizontalInvert": false,
-			"shoulderViewSpeed": 5,
-			"firstViewVerticalInvert": false,
-			"firstViewHorizontalInvert": false,
-			"firstViewSpeed": 5,
-			"firstViewPlayerDirection": true,
-			"viewChangeSpeed": 5,
-			"firstViewMemory": false,
-			"radarLockNorth": false,
-			"radarFloorHide": false,
-			"hudDisplaySize": 0,
-			"hudHideNameTags": false,
-			"lockOnEnabled": false,
-			"weaponSwitchMode": 2,
-			"weaponSwitchA": 0,
-			"weaponSwitchB": 1,
-			"weaponSwitchC": 2,
-			"weaponSwitchNow": 0,
-			"weaponSwitchBefore": 1,
-			"itemSwitchMode": 2,
-			"codec1Name": "",
-			"codec1a": 1,
-			"codec1b": 3,
-			"codec1c": 4,
-			"codec1d": 2,
-			"codec2Name": "",
-			"codec2a": 10,
-			"codec2b": 12,
-			"codec2c": 13,
-			"codec2d": 11,
-			"codec3Name": "",
-			"codec3a": 14,
-			"codec3b": 16,
-			"codec3c": 17,
-			"codec3d": 15,
-			"codec4Name": "",
-			"codec4a": 5,
-			"codec4b": 7,
-			"codec4c": 8,
-			"codec4d": 6,
-			"voiceChatRecognitionLevel": 5,
-			"voiceChatVolume": 5,
-			"headsetVolume": 5,
-			"bgmVolume": 10
-		}
-		""";
-
-	public static void createCharacter(ChannelHandlerContext ctx, Packet in) {
-		PacketError error = null;
-		ByteBuf bo = null;
-		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
-			if (user == null) {
+			if (user == null)
+			{
 				logger.error("selectCharacter- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -326,22 +297,23 @@ public class Users {
 			int accessory1Color = bi.readByte();
 			int accessory2Color = bi.readByte();
 
-			if (name.startsWith("@Chara") || name.startsWith("GM") || name.equalsIgnoreCase("SaveMGO")) {
+			if (name.startsWith("@Chara") || name.startsWith("GM") || name.equalsIgnoreCase("SaveMGO"))
+			{
 				logger.error("createCharacter- Reserved prefix.");
 				error = PacketError.CHAR_NAMEPREFIX;
 				return;
-			} else if (!Util.checkName(name)) {
+			} else if (!Util.checkName(name))
+			{
 				logger.error("createCharacter- Invalid name.");
 				error = PacketError.CHAR_NAMEINVALID;
 				return;
 			}
 
-			int takenId = handle.createQuery("""
-					SELECT id
-					FROM mgo2_charas
-					WHERE name=:name
-					""").bind("name", name).mapTo(Integer.class).findOne().orElse(0);
-			if (takenId != 0) {
+			int takenId = handle.createQuery("SELECT id " //
+					+ "FROM mgo2_charas" //
+					+ "WHERE name=:name").bind("name", name).mapTo(Integer.class).findOne().orElse(0);
+			if (takenId != 0)
+			{
 				logger.error("createCharacter- Name is taken.");
 				error = PacketError.CHAR_NAMETAKEN;
 				return;
@@ -383,11 +355,12 @@ public class Users {
 			var skills = new CharaSkills();
 
 			boolean success = handle.inTransaction((h) -> {
-				int id = h.createUpdate("""
-						INSERT INTO mgo2_charas (user, name, creation_time, gameplay_options)
-						VALUES (:user, :name, :creationTime, :gameplayOptions)
-						""").bindBean(chara).executeAndReturnGeneratedKeys().mapTo(Integer.class).findOne().orElse(0);
-				if (id == 0) {
+				int id = h
+						.createUpdate("INSERT INTO mgo2_charas (user, name, creation_time, gameplay_options) "
+								+ "VALUES (:user, :name, :creationTime, :gameplayOptions)")
+						.bindBean(chara).executeAndReturnGeneratedKeys().mapTo(Integer.class).findOne().orElse(0);
+				if (id == 0)
+				{
 					logger.error("createCharacter- Failed to insert character.");
 					h.rollback();
 					return false;
@@ -395,29 +368,31 @@ public class Users {
 				chara.setId(id);
 
 				appearance.setChara(id);
-				int updated = h.createUpdate("""
-					INSERT INTO mgo2_charas_appearance (chara, gender, face, voice, voice_pitch, head, head_color,
-					upper, upper_color, lower, lower_color, chest, chest_color, waist, waist_color, hands,
-					hands_color, feet, feet_color, accessory_1, accessory_1_color, accessory_2, accessory_2_color,
-					face_paint)
-					VALUES (:chara, :gender, :face, :voice, :voicePitch, :head, :headColor, :upper, :upperColor,
-					:lower, :lowerColor, :chest, :chestColor, :waist, :waistColor, :hands, :handsColor, :feet,
-					:feetColor, :accessory1, :accessory1Color, :accessory2, :accessory2Color, :facePaint)
-					""").bindBean(appearance).execute();
-				if (updated == 0) {
+				int updated = h.createUpdate(
+						"INSERT INTO mgo2_charas_appearance (chara, gender, face, voice, voice_pitch, head, head_color, "
+								+ "upper, upper_color, lower, lower_color, chest, chest_color, waist, waist_color, hands, "
+								+ "hands_color, feet, feet_color, accessory_1, accessory_1_color, accessory_2, accessory_2_color, "
+								+ "face_paint) "
+								+ "VALUES (:chara, :gender, :face, :voice, :voicePitch, :head, :headColor, :upper, :upperColor, "
+								+ ":lower, :lowerColor, :chest, :chestColor, :waist, :waistColor, :hands, :handsColor, :feet, "
+								+ ":feetColor, :accessory1, :accessory1Color, :accessory2, :accessory2Color, :facePaint)")
+						.bindBean(appearance).execute();
+				if (updated == 0)
+				{
 					logger.error("createCharacter- Failed to insert appearance.");
 					h.rollback();
 					return false;
 				}
 
 				skills.setChara(id);
-				updated = h.createUpdate("""
-						INSERT INTO mgo2_charas_skills (chara, skill_1, skill_1_level, skill_2, skill_2_level,
-						skill_3, skill_3_level, skill_4, skill_4_level)
-						VALUES (:chara, :skill1, :skill1Level, :skill2, :skill2Level, :skill3, :skill3Level,
-						:skill4, :skill4Level)
-						""").bindBean(skills).execute();
-				if (updated == 0) {
+				updated = h.createUpdate(
+						"INSERT INTO mgo2_charas_skills (chara, skill_1, skill_1_level, skill_2, skill_2_level, "
+								+ "skill_3, skill_3_level, skill_4, skill_4_level) "
+								+ "VALUES (:chara, :skill1, :skill1Level, :skill2, :skill2Level, :skill3, :skill3Level, "
+								+ ":skill4, :skill4Level)")
+						.bindBean(skills).execute();
+				if (updated == 0)
+				{
 					logger.error("createCharacter- Failed to insert skills.");
 					h.rollback();
 					return false;
@@ -426,7 +401,8 @@ public class Users {
 				return true;
 			});
 
-			if (!success) {
+			if (!success)
+			{
 				error = PacketError.GENERAL;
 				return;
 			}
@@ -435,16 +411,145 @@ public class Users {
 			bo.writeInt(0).writeInt(chara.getId());
 
 			ctx.write(new Packet(0x3102, bo));
-		} catch (Exception e) {
+		} catch (Exception e)
+		{
 			logger.error("createCharacter- Exception occurred.", e);
 			error = PacketError.GENERAL;
 			Buffers.release(bo);
-		} finally {
+		} finally
+		{
 			Packets.writeError(ctx, 0x3102, error);
 		}
 	}
 
-	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Chara chara) {
+	private static final Packet SELECTCHARACTER_OK = new Packet(0x3104, 0);
+
+	public static void selectCharacter(ChannelHandlerContext ctx, Packet in)
+	{
+		PacketError error = null;
+		ByteBuf bo = null;
+		try (var handle = DB.open())
+		{
+			// Get session user
+			var user = LocalUsers.get(ctx.channel());
+			if (user == null)
+			{
+				logger.error("selectCharacter- Invalid session.");
+				error = PacketError.INVALID_SESSION;
+				return;
+			}
+
+			var bi = in.getPayload();
+
+			// Read character index
+			int index = bi.readByte();
+
+			// Get characters
+			var characters = handle.createQuery("SELECT id " //
+					+ "FROM mgo2_charas " //
+					+ "WHERE user=:user AND active=1").bind("user", user.getId()).mapToBean(Chara.class).list();
+
+			int numCharacters = characters.size();
+			if (index < 0 || index > numCharacters - 1)
+			{
+				logger.error("selectCharacter- Index out of bounds.");
+				error = PacketError.GENERAL;
+				return;
+			}
+
+			ctx.write(SELECTCHARACTER_OK);
+		} catch (Exception e)
+		{
+			logger.error("selectCharacter- Exception occurred.", e);
+			error = PacketError.GENERAL;
+			Buffers.release(bo);
+		} finally
+		{
+			Packets.writeError(ctx, 0x3104, error);
+		}
+	}
+
+	private static final Packet DELETECHARACTER_OK = new Packet(0x3106, 0);
+
+	public static void deleteCharacter(ChannelHandlerContext ctx, Packet in)
+	{
+		PacketError error = null;
+		ByteBuf bo = null;
+		try (var handle = DB.open())
+		{
+			// Get session user
+			var user = LocalUsers.get(ctx.channel());
+			if (user == null)
+			{
+				logger.error("deleteCharacter- Invalid session.");
+				error = PacketError.INVALID_SESSION;
+				return;
+			}
+
+			var bi = in.getPayload();
+
+			// Read character index
+			int index = bi.readByte();
+
+			// Get characters
+			var characters = handle.createQuery("SELECT id, creation_time " //
+					+ "FROM mgo2_charas " //
+					+ "WHERE user=:user AND active=1").bind("user", user.getId()).mapToBean(Chara.class).list();
+
+			int numCharacters = characters.size();
+			if (index < 0 || index > numCharacters - 1)
+			{
+				logger.error("deleteCharacter- Index out of bounds.");
+				error = PacketError.GENERAL;
+				return;
+			}
+
+			// Make sure we can delete this character now
+			var character = characters.get(index);
+
+			long time = Instant.now().getEpochSecond();
+			long canDeleteTime = character.getCreationTime() + 7 * 24 * 60 * 60;
+			boolean canDelete = time >= canDeleteTime;
+
+			if (!canDelete)
+			{
+				logger.error("deleteCharacter- Too early to delete.");
+				error = PacketError.CHAR_CANTDELETEYET;
+				return;
+			}
+
+			// Make sure this character isn't in a clan
+			int clanMemberId = handle.createQuery("SELECT id " //
+					+ "FROM mgo2_clans_members " //
+					+ "WHERE chara=:chara").bind("chara", character.getId()).mapTo(Integer.class).findOne().orElse(0);
+			if (clanMemberId != 0)
+			{
+				logger.error("deleteCharacter- Character is still in a clan.");
+				error = PacketError.CHAR_CANTDELETEINCLAN;
+				return;
+			}
+
+			// Remove character from friends and block lists
+			handle.createUpdate("DELETE FROM mgo2_charas_friends " //
+					+ "WHERE target=:chara").bind("chara", character.getId()).execute();
+
+			handle.createUpdate("DELETE FROM mgo2_charas_blocked " //
+					+ "WHERE target=:chara").bind("chara", character.getId()).execute();
+
+			ctx.write(DELETECHARACTER_OK);
+		} catch (Exception e)
+		{
+			logger.error("deleteCharacter- Exception occurred.", e);
+			error = PacketError.GENERAL;
+			Buffers.release(bo);
+		} finally
+		{
+			Packets.writeError(ctx, 0x3106, error);
+		}
+	}
+
+	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Chara chara)
+	{
 		var localUser = new LocalUser();
 		localUser.setId(user.getId());
 		localUser.setUsername(user.getUsername());
@@ -452,7 +557,8 @@ public class Users {
 		localUser.setSystem(user.getSystem());
 		localUser.setSlots(user.getSlots());
 
-		if (chara != null) {
+		if (chara != null)
+		{
 			var localChara = new LocalChara();
 			localUser.setCharacter(localChara);
 
@@ -468,7 +574,8 @@ public class Users {
 		LocalUsers.add(channel, localUser);
 	}
 
-	public static void onLobbyLeave(Channel channel) {
+	public static void onLobbyLeave(Channel channel)
+	{
 		LocalUsers.remove(channel);
 	}
 
