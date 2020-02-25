@@ -33,6 +33,12 @@ public class Users {
 
 	private static final Packet GETSESSION_OK = new Packet(0x3004, 0);
 
+	/**
+	 * GameErrors:
+	 * -0xf0, -0xf2,
+	 * -0x191, -0x192, -0x193, -0x194, -0x195, -0x196, -0x197,
+	 * -0x44c, -0x44d, -0x460, -0x461, -0x462, -0x463,
+	 */
 	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
 		GameError error = null;
 		try (var handle = DB.open()) {
@@ -235,6 +241,11 @@ public class Users {
 			+ "\"bgmVolume\": 10" //
 			+ "}";
 
+	/**
+	 * GameErrors:
+	 * -0xd2,
+	 * -0x104, -0x106, -0x122, -0x125,
+	 */
 	public static void createCharacter(ChannelHandlerContext ctx, Packet in) {
 		GameError error = null;
 		ByteBuf bo = null;
@@ -396,6 +407,11 @@ public class Users {
 
 	private static final Packet SELECTCHARACTER_OK = new Packet(0x3104, 0);
 
+	/**
+	 * GameErrors:
+	 * -0xf1,
+	 * -0x104, -0x11c, -0x123,
+	 */
 	public static void selectCharacter(ChannelHandlerContext ctx, Packet in) {
 		GameError error = null;
 		ByteBuf bo = null;
@@ -437,6 +453,12 @@ public class Users {
 
 	private static final Packet DELETECHARACTER_OK = new Packet(0x3106, 0);
 
+	/**
+	 * GameErrors:
+	 * -0xf1,
+	 * -0x10c, -0x11c, -0x123,
+	 * -0x4b1, -0x4bc,
+	 */
 	public static void deleteCharacter(ChannelHandlerContext ctx, Packet in) {
 		GameError error = null;
 		ByteBuf bo = null;
