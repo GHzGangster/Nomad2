@@ -33,11 +33,9 @@ public class Users {
 
 	private static final Packet GETSESSION_OK = new Packet(0x3004, 0);
 
-	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby)
-	{
+	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
 		PacketError error = null;
-		try (var handle = DB.open())
-		{
+		try (var handle = DB.open()) {
 			var bi = in.getPayload();
 
 			// Read id
@@ -53,14 +51,12 @@ public class Users {
 			// Get user and/or character by session id
 			User user = null;
 			Chara chara = null;
-			if (isAccountLobby)
-			{
+			if (isAccountLobby) {
 				user = handle.createQuery("SELECT id, username, role, banned_until, system, slots " //
 						+ "FROM users " //
 						+ "WHERE id=:id AND session=:sessionId").bind("id", id).bind("sessionId", sessionId)
 						.mapToBean(User.class).findOne().orElse(null);
-			} else
-			{
+			} else {
 				handle.registerRowMapper(BeanMapper.factory(User.class, "u"));
 				handle.registerRowMapper(BeanMapper.factory(Chara.class, "c"));
 				handle.registerRowMapper(JoinRowMapper.forTypes(User.class, Chara.class));
@@ -74,15 +70,13 @@ public class Users {
 								+ "FROM users u JOIN mgo2_charas c ON c.user=u.id "
 								+ "WHERE u.session=:sessionId AND c.id=:id AND c.active=1")
 						.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
-				if (row != null)
-				{
+				if (row != null) {
 					user = row.get(User.class);
 					chara = row.get(Chara.class);
 				}
 			}
 
-			if (user == null)
-			{
+			if (user == null) {
 				logger.error("getSession- Invalid session: {}", sessionId);
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -94,12 +88,10 @@ public class Users {
 			onLobbyJoin(ctx.channel(), localLobby, user, chara);
 
 			ctx.write(GETSESSION_OK);
-		} catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("getSession- Exception occurred.", e);
 			error = PacketError.GENERAL;
-		} finally
-		{
+		} finally {
 			Packets.writeError(ctx, 0x3004, error);
 		}
 	}
@@ -110,16 +102,13 @@ public class Users {
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
-	public static void getCharacterList(ChannelHandlerContext ctx)
-	{
+	public static void getCharacterList(ChannelHandlerContext ctx) {
 		PacketError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open())
-		{
+		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
-			if (user == null)
-			{
+			if (user == null) {
 				logger.error("getCharacterList- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -148,18 +137,15 @@ public class Users {
 			bo.writeInt(0).writeByte(user.getSlots()).writeByte(numCharacters).writeZero(1);
 
 			// Write characters
-			for (int i = 0; i < numCharacters; i++)
-			{
+			for (int i = 0; i < numCharacters; i++) {
 				var row = rows.get(i);
 				var chara = row.get(Chara.class);
 				var appearance = row.get(CharaAppearance.class);
 
-				if (i == 0)
-				{
+				if (i == 0) {
 					Buffers.writeStringFill(bo, Util.getFullCharacterName(chara), 16);
 					bo.writeZero(1);
-				} else
-				{
+				} else {
 					bo.writeInt(i);
 				}
 
@@ -185,13 +171,11 @@ public class Users {
 
 			// Write payload
 			ctx.write(new Packet(0x3049, bo));
-		} catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("getCharacterList- Exception occurred.", e);
 			error = PacketError.GENERAL;
 			Buffers.release(bo);
-		} finally
-		{
+		} finally {
 			Packets.writeError(ctx, 0x3049, error);
 		}
 	}
@@ -251,16 +235,13 @@ public class Users {
 			+ "\"bgmVolume\": 10" //
 			+ "}";
 
-	public static void createCharacter(ChannelHandlerContext ctx, Packet in)
-	{
+	public static void createCharacter(ChannelHandlerContext ctx, Packet in) {
 		PacketError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open())
-		{
+		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
-			if (user == null)
-			{
+			if (user == null) {
 				logger.error("selectCharacter- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -297,23 +278,20 @@ public class Users {
 			int accessory1Color = bi.readByte();
 			int accessory2Color = bi.readByte();
 
-			if (name.startsWith("@Chara") || name.startsWith("GM") || name.equalsIgnoreCase("SaveMGO"))
-			{
+			if (name.startsWith("@Chara") || name.startsWith("GM") || name.equalsIgnoreCase("SaveMGO")) {
 				logger.error("createCharacter- Reserved prefix.");
-				error = PacketError.CHAR_NAMEPREFIX;
+				error = PacketError.CHAR_NAMEINVALID;
 				return;
-			} else if (!Util.checkName(name))
-			{
+			} else if (!Util.checkName(name)) {
 				logger.error("createCharacter- Invalid name.");
 				error = PacketError.CHAR_NAMEINVALID;
 				return;
 			}
 
 			int takenId = handle.createQuery("SELECT id " //
-					+ "FROM mgo2_charas" //
+					+ "FROM mgo2_charas " //
 					+ "WHERE name=:name").bind("name", name).mapTo(Integer.class).findOne().orElse(0);
-			if (takenId != 0)
-			{
+			if (takenId != 0) {
 				logger.error("createCharacter- Name is taken.");
 				error = PacketError.CHAR_NAMETAKEN;
 				return;
@@ -359,8 +337,7 @@ public class Users {
 						.createUpdate("INSERT INTO mgo2_charas (user, name, creation_time, gameplay_options) "
 								+ "VALUES (:user, :name, :creationTime, :gameplayOptions)")
 						.bindBean(chara).executeAndReturnGeneratedKeys().mapTo(Integer.class).findOne().orElse(0);
-				if (id == 0)
-				{
+				if (id == 0) {
 					logger.error("createCharacter- Failed to insert character.");
 					h.rollback();
 					return false;
@@ -377,8 +354,7 @@ public class Users {
 								+ ":lower, :lowerColor, :chest, :chestColor, :waist, :waistColor, :hands, :handsColor, :feet, "
 								+ ":feetColor, :accessory1, :accessory1Color, :accessory2, :accessory2Color, :facePaint)")
 						.bindBean(appearance).execute();
-				if (updated == 0)
-				{
+				if (updated == 0) {
 					logger.error("createCharacter- Failed to insert appearance.");
 					h.rollback();
 					return false;
@@ -391,8 +367,7 @@ public class Users {
 								+ "VALUES (:chara, :skill1, :skill1Level, :skill2, :skill2Level, :skill3, :skill3Level, "
 								+ ":skill4, :skill4Level)")
 						.bindBean(skills).execute();
-				if (updated == 0)
-				{
+				if (updated == 0) {
 					logger.error("createCharacter- Failed to insert skills.");
 					h.rollback();
 					return false;
@@ -401,8 +376,7 @@ public class Users {
 				return true;
 			});
 
-			if (!success)
-			{
+			if (!success) {
 				error = PacketError.GENERAL;
 				return;
 			}
@@ -411,29 +385,24 @@ public class Users {
 			bo.writeInt(0).writeInt(chara.getId());
 
 			ctx.write(new Packet(0x3102, bo));
-		} catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("createCharacter- Exception occurred.", e);
 			error = PacketError.GENERAL;
 			Buffers.release(bo);
-		} finally
-		{
+		} finally {
 			Packets.writeError(ctx, 0x3102, error);
 		}
 	}
 
 	private static final Packet SELECTCHARACTER_OK = new Packet(0x3104, 0);
 
-	public static void selectCharacter(ChannelHandlerContext ctx, Packet in)
-	{
+	public static void selectCharacter(ChannelHandlerContext ctx, Packet in) {
 		PacketError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open())
-		{
+		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
-			if (user == null)
-			{
+			if (user == null) {
 				logger.error("selectCharacter- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -450,37 +419,31 @@ public class Users {
 					+ "WHERE user=:user AND active=1").bind("user", user.getId()).mapToBean(Chara.class).list();
 
 			int numCharacters = characters.size();
-			if (index < 0 || index > numCharacters - 1)
-			{
+			if (index < 0 || index > numCharacters - 1) {
 				logger.error("selectCharacter- Index out of bounds.");
 				error = PacketError.GENERAL;
 				return;
 			}
 
 			ctx.write(SELECTCHARACTER_OK);
-		} catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("selectCharacter- Exception occurred.", e);
 			error = PacketError.GENERAL;
 			Buffers.release(bo);
-		} finally
-		{
+		} finally {
 			Packets.writeError(ctx, 0x3104, error);
 		}
 	}
 
 	private static final Packet DELETECHARACTER_OK = new Packet(0x3106, 0);
 
-	public static void deleteCharacter(ChannelHandlerContext ctx, Packet in)
-	{
+	public static void deleteCharacter(ChannelHandlerContext ctx, Packet in) {
 		PacketError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open())
-		{
+		try (var handle = DB.open()) {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
-			if (user == null)
-			{
+			if (user == null) {
 				logger.error("deleteCharacter- Invalid session.");
 				error = PacketError.INVALID_SESSION;
 				return;
@@ -492,13 +455,12 @@ public class Users {
 			int index = bi.readByte();
 
 			// Get characters
-			var characters = handle.createQuery("SELECT id, creation_time " //
+			var characters = handle.createQuery("SELECT id, name, creation_time " //
 					+ "FROM mgo2_charas " //
 					+ "WHERE user=:user AND active=1").bind("user", user.getId()).mapToBean(Chara.class).list();
 
 			int numCharacters = characters.size();
-			if (index < 0 || index > numCharacters - 1)
-			{
+			if (index < 0 || index > numCharacters - 1) {
 				logger.error("deleteCharacter- Index out of bounds.");
 				error = PacketError.GENERAL;
 				return;
@@ -511,8 +473,7 @@ public class Users {
 			long canDeleteTime = character.getCreationTime() + 7 * 24 * 60 * 60;
 			boolean canDelete = time >= canDeleteTime;
 
-			if (!canDelete)
-			{
+			if (!canDelete) {
 				logger.error("deleteCharacter- Too early to delete.");
 				error = PacketError.CHAR_CANTDELETEYET;
 				return;
@@ -522,10 +483,9 @@ public class Users {
 			int clanMemberId = handle.createQuery("SELECT id " //
 					+ "FROM mgo2_clans_members " //
 					+ "WHERE chara=:chara").bind("chara", character.getId()).mapTo(Integer.class).findOne().orElse(0);
-			if (clanMemberId != 0)
-			{
+			if (clanMemberId != 0) {
 				logger.error("deleteCharacter- Character is still in a clan.");
-				error = PacketError.CHAR_CANTDELETEINCLAN;
+				error = PacketError.CHAR_CANTDELETECLANLEADER;
 				return;
 			}
 
@@ -536,20 +496,29 @@ public class Users {
 			handle.createUpdate("DELETE FROM mgo2_charas_blocked " //
 					+ "WHERE target=:chara").bind("chara", character.getId()).execute();
 
+			// Make character inactive
+			String newName = "@Chara" + character.getId();
+			int updated = handle.createUpdate("UPDATE mgo2_charas " //
+					+ "SET active=0, name=:name, old_name=:old_name " //
+					+ "WHERE id=:chara").bind("chara", character.getId()).bind("name", newName)
+					.bind("old_name", character.getName()).execute();
+			if (updated == 0) {
+				logger.error("deleteCharacter- Failed to delete character.");
+				error = PacketError.GENERAL;
+				return;
+			}
+
 			ctx.write(DELETECHARACTER_OK);
-		} catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("deleteCharacter- Exception occurred.", e);
 			error = PacketError.GENERAL;
 			Buffers.release(bo);
-		} finally
-		{
+		} finally {
 			Packets.writeError(ctx, 0x3106, error);
 		}
 	}
 
-	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Chara chara)
-	{
+	public static void onLobbyJoin(Channel channel, LocalLobby localLobby, User user, Chara chara) {
 		var localUser = new LocalUser();
 		localUser.setId(user.getId());
 		localUser.setUsername(user.getUsername());
@@ -557,8 +526,7 @@ public class Users {
 		localUser.setSystem(user.getSystem());
 		localUser.setSlots(user.getSlots());
 
-		if (chara != null)
-		{
+		if (chara != null) {
 			var localChara = new LocalChara();
 			localUser.setCharacter(localChara);
 
@@ -574,8 +542,7 @@ public class Users {
 		LocalUsers.add(channel, localUser);
 	}
 
-	public static void onLobbyLeave(Channel channel)
-	{
+	public static void onLobbyLeave(Channel channel) {
 		LocalUsers.remove(channel);
 	}
 
