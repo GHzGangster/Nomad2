@@ -1,6 +1,8 @@
 package savemgo.nomad.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import savemgo.nomad.database.record.Chara;
 import savemgo.nomad.local.LocalChara;
@@ -8,6 +10,8 @@ import savemgo.nomad.local.LocalChara;
 public class Util {
 
 	public static final ObjectMapper MAPPER = new ObjectMapper();
+
+	public static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
 	public static byte[] intToBytes(int value) {
 		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8), (byte) value };
