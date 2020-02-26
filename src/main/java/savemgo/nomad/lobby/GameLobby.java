@@ -7,11 +7,12 @@ import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import savemgo.nomad.helper.Characters;
+import savemgo.nomad.helper.Games;
+import savemgo.nomad.helper.Hub;
 import savemgo.nomad.helper.Users;
 import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.server.LobbyHandler;
-import savemgo.nomad.util.Packets;
 
 @Sharable
 public class GameLobby extends LobbyHandler {
@@ -37,13 +38,30 @@ public class GameLobby extends LobbyHandler {
 		case 0x4100:
 			// Get Profile Data
 			Characters.getCharacterInfo(ctx);
-//			Characters.getGameplayOptionsUiSettings(ctx);
-//			Characters.getChatMacros(ctx);
-//			Characters.getPersonalInfo(ctx);
-//			Characters.getGear(ctx);
-//			Characters.getSkills(ctx);
-//			Characters.getSkillSets(ctx);
-//			Characters.getGearSets(ctx);
+			Characters.getGameplayOptions(ctx);
+			Characters.getChatMacros(ctx);
+			Characters.getPersonalInfo(ctx);
+			Characters.getAvailableGear(ctx);
+			Characters.getAvailableSkills(ctx);
+			Characters.getSkillSets(ctx);
+			Characters.getGearSets(ctx);
+			break;
+
+		case 0x4130:
+			Characters.setPersonalInfo(ctx, in);
+			break;
+
+		case 0x4150:
+			Characters.onLobbyDisconnect(ctx, in);
+			break;
+
+		case 0x4700:
+//			Characters.setConnectionInfo(ctx, in);
+			ctx.write(new Packet(0x4701, 0));
+			break;
+
+		case 0x4990:
+			Characters.getGameEntryInfo(ctx);
 			break;
 
 		/** Mail */
@@ -51,6 +69,24 @@ public class GameLobby extends LobbyHandler {
 //			Messages.getMessages(ctx, in, 0);
 			ctx.write(new Packet(0x4821, 0));
 			ctx.write(new Packet(0x4823, 0));
+			break;
+
+		/** Games */
+		case 0x4300:
+			Games.getList(ctx, in, getLobby(), 0x4301);
+			break;
+
+		case 0x4312:
+			Games.getDetails(ctx, in, getLobby());
+			break;
+		
+		case 0x4320:
+//			Games.join(ctx, in);
+			break;
+
+		/** Hub */
+		case 0x4900:
+			Hub.getGameLobbyList(ctx);
 			break;
 
 		default:

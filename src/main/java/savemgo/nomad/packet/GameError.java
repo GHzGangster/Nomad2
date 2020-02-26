@@ -27,11 +27,26 @@ public enum GameError {
 	CHAR_CANTDELETECLANLEADER(-0x4bc, true), //
 	CHAR_CANTDELETECLANJOIN(-0x4bc, true), //
 
+	/** Mail */
+	MAIL_BAD_ADDRESS(-0x321, true), //
+	MAIL_RECEIVER_INBOX_FULL(-0x322, true), //
+	MAIL_RECEIVER_BLOCKLIST(-0x32a, true), //
+	MAIL_BAD_ADDRESS2(-0x334, true), //
+	MAIL_RECEIVER_BLOCKMAIL(-0x33e, true), //
+	MAIL_SERVICES_BANNED(-0x33f, true), //
+	MAIL_SUBJECT_BADWORD(-0x340, true), //
+	MAIL_MESSAGE_BADWORD(-0x341, true), //
+	CLAN_SERVICES_BANNED(-0x4ce, true), //
+	
 	/** Character */
 	CHARACTER_DOESNOTEXIST(0x20), //
 
 	/** Game */
 	GAME_PLACEHOLDER(0x30), //
+	GAME_FULL(-0x1f7, true), //
+	GAME_WRONG_PASSWORD(-0x21c, true), //
+	GAME_JOIN_BANNED(-0x21d, true), //
+	GAME_TRAINING_CLOSED(-0x21e, true), //
 
 	/** Clan */
 	CLAN_DOESNOTEXIST(0x40), //
