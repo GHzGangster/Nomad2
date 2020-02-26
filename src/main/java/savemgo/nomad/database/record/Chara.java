@@ -13,6 +13,7 @@ public class Chara {
 	private boolean active;
 	private int creationTime;
 	private int lobby;
+	private int exp;
 	private int version;
 
 	public Chara() {
@@ -113,6 +114,14 @@ public class Chara {
 
 	public void setNamePrefix(String namePrefix) {
 		this.namePrefix = namePrefix;
+	}
+
+	public int getExp() {
+		return exp;
+	}
+
+	public void setExp(int exp) {
+		this.exp = exp;
 	}
 
 }

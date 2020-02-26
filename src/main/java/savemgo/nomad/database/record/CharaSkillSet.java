@@ -1,9 +1,11 @@
 package savemgo.nomad.database.record;
 
-public class CharaSkills {
+public class CharaSkillSet {
 
 	private int id;
-	private int chara;
+	private int index;
+	private String name;
+	private int modes;
 	private int skill1;
 	private int skill1Level;
 	private int skill2;
@@ -13,7 +15,7 @@ public class CharaSkills {
 	private int skill4;
 	private int skill4Level;
 
-	public CharaSkills() {
+	public CharaSkillSet() {
 
 	}
 
@@ -25,12 +27,28 @@ public class CharaSkills {
 		this.id = id;
 	}
 
-	public int getChara() {
-		return chara;
+	public int getIndex() {
+		return index;
 	}
 
-	public void setChara(int chara) {
-		this.chara = chara;
+	public void setIndex(int index) {
+		this.index = index;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public int getModes() {
+		return modes;
+	}
+
+	public void setModes(int modes) {
+		this.modes = modes;
 	}
 
 	public int getSkill1() {
