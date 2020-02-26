@@ -98,6 +98,11 @@ public class Buffers {
 
 	public static void writeStringFill(ByteBuf buffer, String str, int length, Charset charset)
 			throws CharacterCodingException {
+		if (str == null) {
+			buffer.writeZero(length);
+			return;
+		}
+		
 		var byteBuffer = ByteBuffer.allocate(length);
 		var charBuffer = CharBuffer.wrap(str);
 
