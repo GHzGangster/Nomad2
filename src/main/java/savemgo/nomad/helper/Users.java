@@ -20,6 +20,7 @@ import savemgo.nomad.database.record.User;
 import savemgo.nomad.local.LocalChara;
 import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.local.LocalUser;
+import savemgo.nomad.local.util.Channels;
 import savemgo.nomad.local.util.LocalUsers;
 import savemgo.nomad.packet.Packet;
 import savemgo.nomad.packet.GameError;
@@ -35,8 +36,11 @@ public class Users {
 
 	/**
 	 * GameErrors:
+	 * 
 	 * -0xf0, -0xf2,
+	 * 
 	 * -0x191, -0x192, -0x193, -0x194, -0x195, -0x196, -0x197,
+	 * 
 	 * -0x44c, -0x44d, -0x460, -0x461, -0x462, -0x463,
 	 */
 	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
@@ -72,9 +76,8 @@ public class Users {
 								+ "u.system u_system, u.slots u_slots, "
 								+ "c.id c_id, c.user c_user, c.name c_name, c.old_name c_old_name, c.rank c_rank, "
 								+ "c.comment c_comment, c.gameplay_options c_gameplay_options, c.active c_active, "
-								+ "c.creation_time c_creation_time, c.lobby c_lobby "
-								+ "FROM users u JOIN mgo2_charas c ON c.user=u.id "
-								+ "WHERE u.session=:sessionId AND c.id=:id AND c.active=1")
+								+ "c.creation_time c_creation_time, c.lobby c_lobby " + "FROM users u " //
+								+ "LEFT JOIN mgo2_charas c ON c.user=u.id " + "WHERE u.session=:sessionId AND c.id=:id")
 						.bind("id", id).bind("sessionId", sessionId).mapTo(JoinRow.class).findOne().orElse(null);
 				if (row != null) {
 					user = row.get(User.class);
@@ -85,6 +88,12 @@ public class Users {
 			if (user == null) {
 				logger.error("getSession- Invalid session: {}", sessionId);
 				error = GameError.INVALID_SESSION;
+				return;
+			}
+
+			if (!isAccountLobby && (chara == null || !chara.isActive())) {
+				logger.error("getSession- Character is inactive or null.", sessionId);
+				error = GameError.CHAR_CANTBEUSED;
 				return;
 			}
 
@@ -243,7 +252,9 @@ public class Users {
 
 	/**
 	 * GameErrors:
+	 * 
 	 * -0xd2,
+	 * 
 	 * -0x104, -0x106, -0x122, -0x125,
 	 */
 	public static void createCharacter(ChannelHandlerContext ctx, Packet in) {
@@ -409,7 +420,9 @@ public class Users {
 
 	/**
 	 * GameErrors:
+	 * 
 	 * -0xf1,
+	 * 
 	 * -0x104, -0x11c, -0x123,
 	 */
 	public static void selectCharacter(ChannelHandlerContext ctx, Packet in) {
@@ -437,7 +450,7 @@ public class Users {
 			int numCharacters = characters.size();
 			if (index < 0 || index > numCharacters - 1) {
 				logger.error("selectCharacter- Index out of bounds.");
-				error = GameError.GENERAL;
+				error = GameError.CANTUSE;
 				return;
 			}
 
@@ -455,8 +468,11 @@ public class Users {
 
 	/**
 	 * GameErrors:
+	 * 
 	 * -0xf1,
+	 * 
 	 * -0x10c, -0x11c, -0x123,
+	 * 
 	 * -0x4b1, -0x4bc,
 	 */
 	public static void deleteCharacter(ChannelHandlerContext ctx, Packet in) {
@@ -562,9 +578,11 @@ public class Users {
 		}
 
 		LocalUsers.add(channel, localUser);
+		Channels.add(channel);
 	}
 
 	public static void onLobbyLeave(Channel channel) {
+		Channels.remove(channel);
 		LocalUsers.remove(channel);
 	}
 
