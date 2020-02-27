@@ -16,6 +16,7 @@ import savemgo.nomad.database.DB;
 import savemgo.nomad.database.record.Chara;
 import savemgo.nomad.database.record.CharaAppearance;
 import savemgo.nomad.database.record.CharaSkills;
+import savemgo.nomad.database.record.Lobby;
 import savemgo.nomad.database.record.User;
 import savemgo.nomad.local.LocalChara;
 import savemgo.nomad.local.LocalLobby;
@@ -43,7 +44,7 @@ public class Users {
 	 * 
 	 * -0x44c, -0x44d, -0x460, -0x461, -0x462, -0x463,
 	 */
-	public static void getSession(ChannelHandlerContext ctx, Packet in, boolean isAccountLobby, LocalLobby localLobby) {
+	public static void getSession(ChannelHandlerContext ctx, Packet in, LocalLobby localLobby) {
 		GameError error = null;
 		try (var handle = DB.open()) {
 			var bi = in.getPayload();
@@ -61,7 +62,7 @@ public class Users {
 			// Get user and/or character by session id
 			User user = null;
 			Chara chara = null;
-			if (isAccountLobby) {
+			if (localLobby.getType() == Lobby.TYPE_ACCOUNT) {
 				user = handle.createQuery("SELECT id, username, role, banned_until, system, slots " //
 						+ "FROM users " //
 						+ "WHERE id=:id AND session=:sessionId").bind("id", id).bind("sessionId", sessionId)
@@ -91,7 +92,7 @@ public class Users {
 				return;
 			}
 
-			if (!isAccountLobby && (chara == null || !chara.isActive())) {
+			if ((localLobby.getType() != Lobby.TYPE_ACCOUNT) && (chara == null || !chara.isActive())) {
 				logger.error("getSession- Character is inactive or null.", sessionId);
 				error = GameError.CHAR_CANTBEUSED;
 				return;

@@ -28,7 +28,7 @@ public class AccountLobby extends LobbyHandler {
 
 		/** Users */
 		case 0x3003:
-			Users.getSession(ctx, in, true, getLobby());
+			Users.getSession(ctx, in, getLobby());
 			break;
 
 		case 0x3048:
@@ -42,7 +42,7 @@ public class AccountLobby extends LobbyHandler {
 		case 0x3103:
 			Users.selectCharacter(ctx, in);
 			break;
-			
+
 		case 0x3105:
 			Users.deleteCharacter(ctx, in);
 			break;

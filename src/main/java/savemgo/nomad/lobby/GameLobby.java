@@ -6,9 +6,11 @@ import org.apache.logging.log4j.Logger;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
+import savemgo.nomad.database.DB;
 import savemgo.nomad.helper.Characters;
 import savemgo.nomad.helper.Games;
 import savemgo.nomad.helper.Hub;
+import savemgo.nomad.helper.Messages;
 import savemgo.nomad.helper.Users;
 import savemgo.nomad.local.LocalLobby;
 import savemgo.nomad.packet.Packet;
@@ -31,20 +33,21 @@ public class GameLobby extends LobbyHandler {
 
 		/** Users */
 		case 0x3003:
-			Users.getSession(ctx, in, false, getLobby());
+			Users.getSession(ctx, in, getLobby());
 			break;
 
 		/** Characters */
 		case 0x4100:
-			// Get Profile Data
-			Characters.getCharacterInfo(ctx);
-			Characters.getGameplayOptions(ctx);
-			Characters.getChatMacros(ctx);
-			Characters.getPersonalInfo(ctx);
-			Characters.getAvailableGear(ctx);
-			Characters.getAvailableSkills(ctx);
-			Characters.getSkillSets(ctx);
-			Characters.getGearSets(ctx);
+			try (var handle = DB.open()) {
+				Characters.getCharacterInfo(ctx, handle);
+				Characters.getGameplayOptions(ctx, handle);
+				Characters.getChatMacros(ctx, handle);
+				Characters.getPersonalInfo(ctx, handle);
+				Characters.getAvailableGear(ctx);
+				Characters.getAvailableSkills(ctx);
+				Characters.getSkillSets(ctx, handle);
+				Characters.getGearSets(ctx, handle);
+			}
 			break;
 
 		case 0x4130:
@@ -66,9 +69,7 @@ public class GameLobby extends LobbyHandler {
 
 		/** Mail */
 		case 0x4820:
-//			Messages.getMessages(ctx, in, 0);
-			ctx.write(new Packet(0x4821, 0));
-			ctx.write(new Packet(0x4823, 0));
+			Messages.getMessages(ctx, in, 0);
 			break;
 
 		/** Games */
@@ -79,7 +80,7 @@ public class GameLobby extends LobbyHandler {
 		case 0x4312:
 			Games.getDetails(ctx, in, getLobby());
 			break;
-		
+
 		case 0x4320:
 //			Games.join(ctx, in);
 			break;

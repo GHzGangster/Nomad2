@@ -9,8 +9,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.CharsetUtil;
-import savemgo.nomad.packet.PayloadGroupConsumer;
 import savemgo.nomad.packet.PayloadGroup;
+import savemgo.nomad.packet.PayloadGroupConsumer;
+import savemgo.nomad.packet.PayloadGroupIntFunction;
 
 public class Buffers {
 
@@ -67,6 +68,18 @@ public class Buffers {
 		return payloads;
 	}
 
+	public static PayloadGroup createPayloads(int count, PayloadGroupIntFunction function) throws Exception {
+		var buffers = new ByteBuf[count];
+
+		for (int i = 0; i < count; i++) {
+			buffers[i] = function.apply(i);
+		}
+
+		var payloads = new PayloadGroup();
+		payloads.setBuffers(buffers);
+		return payloads;
+	}
+
 	public static String readString(ByteBuf buffer, int maxLength) {
 		return readString(buffer, maxLength, CharsetUtil.ISO_8859_1);
 	}
@@ -102,7 +115,7 @@ public class Buffers {
 			buffer.writeZero(length);
 			return;
 		}
-		
+
 		var byteBuffer = ByteBuffer.allocate(length);
 		var charBuffer = CharBuffer.wrap(str);
 

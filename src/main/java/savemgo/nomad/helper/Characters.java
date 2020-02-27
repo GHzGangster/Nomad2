@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.mapper.JoinRow;
 import org.jdbi.v3.core.mapper.JoinRowMapper;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
@@ -54,10 +55,10 @@ public class Characters {
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
 			(byte) 0x00, (byte) 0x00 };
 
-	public static void getCharacterInfo(ChannelHandlerContext ctx) {
+	public static void getCharacterInfo(ChannelHandlerContext ctx, Handle handle) {
 		GameError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
+		try {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
@@ -124,10 +125,10 @@ public class Characters {
 			(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
 			(byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
-	public static void getGameplayOptions(ChannelHandlerContext ctx) {
+	public static void getGameplayOptions(ChannelHandlerContext ctx, Handle handle) {
 		GameError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
+		try {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
@@ -307,10 +308,10 @@ public class Characters {
 		}
 	}
 
-	public static void getChatMacros(ChannelHandlerContext ctx) {
+	public static void getChatMacros(ChannelHandlerContext ctx, Handle handle) {
 		GameError error = null;
 		PayloadGroup payloads = null;
-		try (var handle = DB.open()) {
+		try {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
@@ -359,10 +360,10 @@ public class Characters {
 
 	private static final byte PERSONALINFO_BYTES3[] = { (byte) 0x00, (byte) 0xA7, (byte) 0x00, (byte) 0x0D };
 
-	public static void getPersonalInfo(ChannelHandlerContext ctx) {
+	public static void getPersonalInfo(ChannelHandlerContext ctx, Handle handle) {
 		GameError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
+		try {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
@@ -631,10 +632,10 @@ public class Characters {
 		}
 	}
 
-	public static void getSkillSets(ChannelHandlerContext ctx) {
+	public static void getSkillSets(ChannelHandlerContext ctx, Handle handle) {
 		GameError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
+		try {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
@@ -682,10 +683,10 @@ public class Characters {
 		}
 	}
 
-	public static void getGearSets(ChannelHandlerContext ctx) {
+	public static void getGearSets(ChannelHandlerContext ctx, Handle handle) {
 		GameError error = null;
 		ByteBuf bo = null;
-		try (var handle = DB.open()) {
+		try {
 			// Get session user
 			var user = LocalUsers.get(ctx.channel());
 			if (user == null) {
